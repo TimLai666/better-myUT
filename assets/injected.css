@@ -34,6 +34,10 @@ font {
     line-height: 1.5 !important;
 }
 
+center {
+    padding: 10px 0 !important;
+}
+
 /* ======== 超級好看的平面風格按鈕系統 ======== */
 
 /* 按鈕基礎樣式 */
@@ -797,13 +801,14 @@ HTML 使用範例：
 /* 表格容器 */
 .stable {
     width: 100% !important;
+    max-width: 95dvw !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
     background: #ffffff !important;
     border-radius: 8px !important;
     overflow: hidden !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-    margin: 16px 0 !important;
+    margin: 16px 10px !important;
     font-family: 'Taipei Sans TC', sans-serif !important;
 }
 
