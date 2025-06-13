@@ -77,11 +77,11 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 複製回應 headers，但排除某些不應該轉發的 headers
 	for key, values := range finalResp.Header {
 		// 跳過某些不應該轉發的 headers
-		if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
-			key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
-			key == "Transfer-Encoding" || key == "Upgrade" {
-			continue
-		}
+		// if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
+		// 	key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
+		// 	key == "Transfer-Encoding" || key == "Upgrade" {
+		// 	continue
+		// }
 
 		// 如果我們修改了 HTML 內容，就不要複製 Content-Length header
 		if isHTML && strings.ToLower(key) == "content-length" {
