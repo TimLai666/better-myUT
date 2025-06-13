@@ -40,9 +40,5 @@ ENV TZ=Asia/Taipei
 # 暴露端口
 EXPOSE 8080
 
-# 設定預設環境變數
-ENV PORT=8080
-ENV TARGET_HOST=https://my.utaipei.edu.tw
-
 # 執行程式
 CMD ["./better-myUT"] 

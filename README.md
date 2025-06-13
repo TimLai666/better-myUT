@@ -6,7 +6,6 @@
 
 - **響應式設計**：自動為校務系統添加響應式 CSS，讓網站在手機和平板上也能正常瀏覽
 - **會話維持**：保持與原始校務系統的登入狀態
-- **自動登入**：開發時支援自動登入功能
 - **表格優化**：針對校務系統的表格進行手機版優化
 - **UI 美化**：改善按鈕、表單等元素的視覺效果
 
@@ -14,7 +13,7 @@
 
 ### 1. 克隆專案
 ```bash
-git clone <repository-url>
+git clone https://github.com/TimLai666/better-myUT
 cd better-myUT
 ```
 
@@ -32,11 +31,17 @@ cp env.example .env
 編輯 `.env` 文件：
 ```env
 # 伺服器設定
+# 內部監聽的埠號（容器內或本機）
 PORT=8080
-TARGET_HOST=https://my.utaipei.edu.tw
-```
 
-**注意**：請勿將包含真實帳號密碼的 `.env` 文件提交到版本控制系統中。
+# 上游校務系統網址（通常保持預設即可）
+TARGET_HOST=https://my.utaipei.edu.tw
+
+# 對外公開的代理網址（*非常重要*）
+# 用來在 HTML 中把所有重定向、超連結改寫成部署後的網域，
+# 例如您透過 Nginx 反向代理到 https://your-domain.com 時：
+PROXY_HOST=https://your-domain.com
+```
 
 ## 使用方法
 
@@ -45,11 +50,27 @@ TARGET_HOST=https://my.utaipei.edu.tw
 go run main.go
 ```
 
-### 訪問網站
-在瀏覽器中訪問：
+### 本地訪問
+在瀏覽器中開啟：
 ```
 http://localhost:8080/utaipei/index_sky.html
 ```
+
+---
+
+## Docker 快速部署
+
+```bash
+docker build -t better-myut .
+
+# 例如要對外提供 https://example.com/ 服務，可用 80:8080 並設定 PROXY_HOST
+docker run -d --name myut -p 80:8080 \
+  -e PROXY_HOST=https://example.com \
+  -e TARGET_HOST=https://my.utaipei.edu.tw \
+  better-myut
+```
+
+若您已經有前端 Nginx / Traefik 等反向代理，可僅暴露內部埠，並在代理層設定對應路徑。
 
 ## 技術細節
 
@@ -71,9 +92,6 @@ http://localhost:8080/utaipei/index_sky.html
 
 **Q: 無法連接到校務系統**
 A: 檢查網路連接和 `TARGET_HOST` 設定是否正確
-
-**Q: 自動登入失敗**
-A: 確認帳號密碼正確，校務系統可能需要特定的登入流程
 
 **Q: 頁面顯示不正常**
 A: 校務系統可能更新了結構，需要調整 CSS 或 HTML 處理邏輯

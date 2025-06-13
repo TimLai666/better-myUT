@@ -19,7 +19,8 @@ import (
 
 type ProxyServer struct {
 	client     *http.Client
-	targetHost string
+	targetHost string // upstream 目標網站
+	publicHost string // 部署後對外的代理伺服器網址
 }
 
 func NewProxyServer() *ProxyServer {
@@ -29,9 +30,22 @@ func NewProxyServer() *ProxyServer {
 		Timeout: 30 * time.Second,
 	}
 
+	// 從環境變數讀取目標與公開主機
+	target := os.Getenv("TARGET_HOST")
+	public := os.Getenv("PROXY_HOST")
+
+	// 預設值
+	if target == "" {
+		target = "https://my.utaipei.edu.tw"
+	}
+	if public == "" {
+		public = "http://127.0.0.1:8080"
+	}
+
 	return &ProxyServer{
 		client:     client,
-		targetHost: os.Getenv("TARGET_HOST"),
+		targetHost: target,
+		publicHost: public,
 	}
 }
 
@@ -296,67 +310,6 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	return []byte(htmlStr)
 }
 
-func (p *ProxyServer) convertFramesetToContent(html string) string {
-	framesetRegex := regexp.MustCompile(`(?is)<frameset[^>]*>(.*?)</frameset>`)
-	frameRegex := regexp.MustCompile(`(?i)<frame[^>]*src\s*=\s*["']([^"']+)["'][^>]*>`) // 事先編譯，避免多次編譯
-
-	// 如有多層巢狀 frameset，最多迭代 10 次（通常 1~2 次就能清理完）
-	for i := 0; i < 10; i++ {
-		if !framesetRegex.MatchString(html) {
-			break // 已無 frameset
-		}
-
-		html = framesetRegex.ReplaceAllStringFunc(html, func(framesetMatch string) string {
-			log.Printf("檢測到 frameset，開始轉換為直接內容 (第 %d 層)", i+1)
-
-			frameMatches := frameRegex.FindAllStringSubmatch(framesetMatch, -1)
-
-			var contentHTML strings.Builder
-			contentHTML.WriteString(`<div class="frameset-container">`)
-
-			for idx, m := range frameMatches {
-				if len(m) < 2 {
-					continue
-				}
-				src := strings.TrimSpace(m[1])
-
-				// 轉為代理後的同源 URL
-				if strings.HasPrefix(src, "/") {
-					src = "http://127.0.0.1:8080" + src
-				} else if !strings.HasPrefix(src, "http") {
-					src = "http://127.0.0.1:8080/utaipei/" + src
-				}
-
-				contentHTML.WriteString(fmt.Sprintf(`
-<div class="frame-content frame-%d">
-  <iframe src="%s" width="100%%" height="600px" frameborder="0" scrolling="auto"></iframe>
-</div>`, idx+1, src))
-			}
-
-			contentHTML.WriteString("</div>")
-
-			// 一份共用 CSS（插入一次即可）
-			framesetCSS := `
-<style>
-.frameset-container {width:100%;height:100vh;display:flex;flex-direction:column;margin:0;padding:0;}
-.frame-content{flex:1;width:100%;overflow:hidden;}
-.frame-content iframe{width:100%;height:100%;border:none;display:block;}
-@media screen and (max-width:768px){.frameset-container{height:auto;}.frame-content{margin-bottom:10px;min-height:400px;}.frame-content iframe{height:400px;}.frame-1{min-height:100px;}.frame-1 iframe{height:100px;}}
-@media screen and (min-width:769px) and (max-width:1024px){.frame-1{min-height:120px;}.frame-1 iframe{height:120px;}}
-</style>
-`
-
-			return framesetCSS + contentHTML.String()
-		})
-	}
-
-	// 移除 noframes
-	noframesRegex := regexp.MustCompile(`(?is)<noframes[^>]*>.*?</noframes>`)
-	html = noframesRegex.ReplaceAllString(html, "")
-
-	return html
-}
-
 func (p *ProxyServer) addTableDataLabels(html string) string {
 	// 這是一個簡化的實現，實際使用中可能需要更複雜的 HTML 解析
 	// 為表格的 td 添加 data-label 屬性
@@ -414,8 +367,11 @@ func (p *ProxyServer) addTableDataLabels(html string) string {
 }
 
 func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
-	// 獲取代理伺服器的地址
-	proxyHost := "http://127.0.0.1:8080"
+	// 取得代理伺服器對外網址
+	proxyHost := p.publicHost
+	if proxyHost == "" {
+		proxyHost = "http://127.0.0.1:8080"
+	}
 
 	// 替換絕對 URL
 	html = strings.ReplaceAll(html, "https://my.utaipei.edu.tw", proxyHost)
@@ -534,7 +490,7 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 
 func main() {
 	// 載入環境變數
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load(".env"); err != nil {
 		log.Println("警告：未找到 .env 檔案，將使用系統環境變數")
 	}
 
