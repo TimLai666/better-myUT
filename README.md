@@ -10,9 +10,9 @@
 
 | 分類 | 功能描述 |
 | --- | --- |
-| 響應式介面 | • 於所有 HTML 回應中自動注入 `injected.css`，將原始表格轉為卡片式排版、優化選單與按鈕尺寸。<br/>• 自動為 `<table>` 標籤加上 `data-label` 屬性，利於 CSS 以 `::before` 呈現欄位名稱。 |
+| 響應式介面 | • 自動注入 `injected.css`，解除右鍵禁用並優化側邊選單（`#m_tree`）及功能按鈕外觀。<br/>• 自動為 `<td>` 加上 `data-label`，對應欄位名稱以便 CSS 於窄螢幕用 `::before` 顯示。 |
 | 相容性修補 | • 透過 `injected.js` 隱藏在手機上不需要的按鈕並修正 frameset 切換邏輯。 |
-| 代理強化 | • 最高 10 次的自動跟隨重定向。<br/>• 智慧重寫 `Location` / 內嵌 URL 以回到代理本身。<br/>• 內建 CookieJar 維持與上游（my.utaipei.edu.tw）的登入狀態。 |
+| 代理強化 | • 最高 100 次的自動跟隨重定向。<br/>• 智慧重寫 `Location` / 內嵌 URL 以回到代理本身。<br/>• 內建 CookieJar 維持與上游（my.utaipei.edu.tw）的登入狀態。 |
 | 快取控制 | • 自行覆寫 `Cache-Control` / `Pragma` / `Expires` 標頭與對應 HTML `<meta>`，確保前端永遠取得最新內容。 |
 | 部署便利 | • 單一可執行檔（Windows/macOS/Linux）或透過 Docker image 快速啟動。 |
 
@@ -20,15 +20,10 @@
 
 ## 快速開始
 
-### 1. 下載或編譯
+### 1. 編譯
 
 ```bash
-# 直接抓取範例二進位（以 linux amd64 為例）
-curl -L -o better-myUT https://github.com/TimLai666/better-myUT/releases/latest/download/better-myUT-linux-amd64
-chmod +x better-myUT
-
-# 或自行編譯
- go build -o better-myUT main.go
+go build -o better-myUT main.go
 ```
 
 ### 2. 建立 `.env`
@@ -94,16 +89,6 @@ docker run -d --name myut -p 80:8080 \
 
 ---
 
-## 常見問題
-
-| 問題 | 解決建議 |
-| --- | --- |
-| 無法登入/顯示 `Bad Gateway` | 確認校務系統是否可正常連線＆`TARGET_HOST` 是否正確。 |
-| 手機版仍顯示桌面 UI | 清除瀏覽器快取或檢查是否覆寫到 `Cache-Control`。 |
-| 下載檔案出現錯誤 | 目前以文字/HTML 優化為主，若遇到特殊 MIME 類型請回報 Issue。 |
-
----
-
 ## 貢獻
 
 歡迎提出 Issue、Pull Request 或建議！
@@ -113,3 +98,5 @@ docker run -d --name myut -p 80:8080 \
 ## 授權 License
 
 本專案採用 **MIT License**，詳見 [LICENSE](LICENSE)。
+
+### 歡迎學校拿去用！
