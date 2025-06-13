@@ -117,7 +117,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // 新增函數：處理代理請求並自動跟隨重定向
 func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, error) {
-	maxRedirects := 10
+	maxRedirects := 100
 
 	// 處理路徑：去掉 /utaipei 前綴
 	currentURL := p.targetHost + r.URL.Path
