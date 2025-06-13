@@ -30,6 +30,10 @@ html, body, * {
     pointer-events: auto !important;
 }
 
+font {
+    line-height: 1.5 !important;
+}
+
 /* ======== 超級好看的平面風格按鈕系統 ======== */
 
 /* 按鈕基礎樣式 */
