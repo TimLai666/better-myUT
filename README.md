@@ -11,8 +11,7 @@
 | 分類 | 功能描述 |
 | --- | --- |
 | 響應式介面 | • 自動注入 `injected.css`，解除右鍵禁用並優化側邊選單（`#m_tree`）及功能按鈕外觀。<br/>• 自動為 `<td>` 加上 `data-label`，對應欄位名稱以便 CSS 於窄螢幕用 `::before` 顯示。 |
-| 相容性修補 | • 透過 `injected.js` 隱藏在手機上不需要的按鈕並修正 frameset 切換邏輯。 |
-| 代理強化 | • 最高 100 次的自動跟隨重定向。<br/>• 智慧重寫 `Location` / 內嵌 URL 以回到代理本身。<br/>• 內建 CookieJar 維持與上游（my.utaipei.edu.tw）的登入狀態。 |
+| 代理強化 | • 智慧重寫 `Location` / 內嵌 URL 以回到代理本身。<br/>• 內建 CookieJar 維持與上游（my.utaipei.edu.tw）的登入狀態。 |
 | 快取控制 | • 自行覆寫 `Cache-Control` / `Pragma` / `Expires` 標頭與對應 HTML `<meta>`，確保前端永遠取得最新內容。 |
 | 部署便利 | • 單一可執行檔（Windows/macOS/Linux）或透過 Docker image 快速啟動。 |
 
@@ -28,7 +27,7 @@ go build -o better-myUT main.go
 
 ### 2. 建立 `.env`
 
-專案中 **不再提供 `env.example`**，請直接於可執行檔相同目錄新增 `.env`：
+專案中提供 `env.example`，請將其改名為 `.env` 並填入相關資訊：
 
 ```dotenv
 # 伺服器監聽埠（預設 8080）
