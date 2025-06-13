@@ -250,7 +250,13 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	htmlStr = regexp.MustCompile(`(?i)oncontextmenu\s*=\s*["'][^"']*["']`).ReplaceAllString(htmlStr, "")
 
 	// 讀取外部 injectedCSS 資料
-	responsiveCSS := "<style>" + assets.InjectedCSS + "</style>"
+	responsiveCSS := "\n<style>\n" + assets.InjectedCSS + "\n</style>"
+
+	// 如為 frameset 頁（頂層），再注入 JavaScript
+	jsInjection := ""
+	if strings.Contains(strings.ToLower(htmlStr), "<frameset") {
+		jsInjection = "\n<script>\n" + assets.InjectedJS + "\n</script>"
+	}
 
 	// 檢查並插入 viewport
 	viewportMeta := `<meta name="viewport" content="width=device-width,initial-scale=1">`
@@ -270,17 +276,17 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	// 在 </head> 之前插入 CSS 和 meta 標籤
 	headEndRegex := regexp.MustCompile(`(?i)</head>`)
 	if headEndRegex.MatchString(htmlStr) {
-		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+responsiveCSS+"</head>")
+		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+responsiveCSS+jsInjection+"</head>")
 	} else {
 		// 如果沒有 head 標籤，在 body 開始後插入
 		bodyStartRegex := regexp.MustCompile(`(?i)<body[^>]*>`)
 		if bodyStartRegex.MatchString(htmlStr) {
 			htmlStr = bodyStartRegex.ReplaceAllStringFunc(htmlStr, func(match string) string {
-				return match + noCacheMetaTags + responsiveCSS
+				return match + noCacheMetaTags + responsiveCSS + jsInjection
 			})
 		} else {
 			// 如果既沒有 <head> 也沒有 <body>，最後採用最保險方案：直接把 CSS 及 meta 標籤放到最前面
-			htmlStr = noCacheMetaTags + viewportMeta + responsiveCSS + htmlStr
+			htmlStr = noCacheMetaTags + viewportMeta + responsiveCSS + jsInjection + htmlStr
 		}
 	}
 

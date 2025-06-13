@@ -59,7 +59,7 @@ html, body, * {
     height: 30px !important;
     padding: 5px 2px !important;
     position: fixed !important;
-    display: block !important;
+    display: block;
     top: 70px !important;
     left: 20px !important;
     z-index: 1000 !important;
@@ -73,7 +73,7 @@ html, body, * {
 }
 
 /* -------- 側邊欄美化 -------- */
-#Lmenu #menu {
+#menu {
     display: none !important;
 }
 
@@ -82,17 +82,18 @@ html, body, * {
     background: #f9f9fb !important;
     border: 1px solid #dcdcdc !important;
     border-radius: 6px !important;
-    padding: 8px 6px !important;
+    padding: 8px 6px 8px 4px !important; /* 右側留 6px，左側 4px */
     overflow-y: auto !important;
     scrollbar-width: thin !important;
     height: 100dvh !important; /* 佔滿動態視窗高度 */
-    width: 250px !important;
+    width: 245px !important;            /* 撐滿 frame */
+    box-sizing: border-box !important; /* 邊框與 padding 佔內寬，避免超出 */
 }
 #m_tree table {border-collapse: collapse !important; width: 100% !important;}
 #m_tree img {vertical-align: middle !important;}
 #m_tree .ob_td {
     padding: 0 !important;
-    max-width: 100% !important;
+    width: 100% !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
     word-break: break-word !important;
@@ -145,4 +146,7 @@ html, body, * {
     width: 100% !important;
 }
 
-
+/* 公告美化 */
+.ui-widget-content.ui-draggable {
+    width: 100dvw !important;
+}
