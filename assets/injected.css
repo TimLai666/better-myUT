@@ -153,7 +153,43 @@ html, body, * {
     margin: 0 !important;
 }
 
-/* -------- 手機版 Header 強制樣式 -------- */
+/* -------- Header 樣式 -------- */
+/* 修改密碼按鈕 */
+#change_pwd {
+    height: 30px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    background: #0366d6 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    z-index: 999 !important;
+    cursor: pointer !important;
+}
+
+/* 登出按鈕 */
+#relogin {
+    height: 30px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    background: #dc3545 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    z-index: 999 !important;
+    cursor: pointer !important;
+}
+
+/* 按鈕 hover 效果 */
+#change_pwd:hover {
+    background: #024ea4 !important;
+}
+
+#relogin:hover {
+    background: #c82333 !important;
+}
+
+
 @media (max-width: 768px) {
     /* 隱藏校徽 */
     .schoolLogo {
@@ -161,18 +197,18 @@ html, body, * {
     }
     
     /* 原始表格保持，但調整排版 */
-    table[width="100%"] {
+    .idxHeader table[width="100%"] {
         width: 100% !important;
         table-layout: fixed !important;
     }
     
     /* 隱藏第一格空白 */
-    table[width="100%"] td[width="50%"] {
+    .idxHeader table[width="100%"] td[width="50%"] {
         display: none !important;
     }
     
     /* 中間格改為 flex */
-    table[width="100%"] td[style*="vertical-align:bottom"] {
+    .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
         display: flex !important;
         flex-wrap: wrap !important;
         align-items: center !important;
@@ -181,7 +217,7 @@ html, body, * {
     }
     
     /* 學期資訊保持在原位但調整樣式 */
-    td #info {
+    .idxHeader td #info {
         font-size: 11px !important;
         line-height: 1.2 !important;
         word-break: break-word !important;
@@ -197,43 +233,16 @@ html, body, * {
     
     /* 修改密碼按鈕 - 右下角 */
     #change_pwd {
-        height: 30px !important;
         position: fixed !important;
         bottom: 10px !important;
         right: 90px !important;
-        padding: 8px 12px !important;
-        font-size: 12px !important;
-        background: #0366d6 !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 6px !important;
-        z-index: 999 !important;
-        cursor: pointer !important;
     }
     
     /* 登出按鈕 - 右下角 */
     #relogin {
-        height: 30px !important;
         position: fixed !important;
         bottom: 10px !important;
         right: 10px !important;
-        padding: 8px 12px !important;
-        font-size: 12px !important;
-        background: #dc3545 !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 6px !important;
-        z-index: 999 !important;
-        cursor: pointer !important;
-    }
-    
-    /* 按鈕 hover 效果 */
-    #change_pwd:hover {
-        background: #024ea4 !important;
-    }
-    
-    #relogin:hover {
-        background: #c82333 !important;
     }
 }
 
