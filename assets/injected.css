@@ -153,3 +153,63 @@ html, body, * {
     margin: 0 !important;
 }
 
+/* -------- 手機版 Header 強制樣式 -------- */
+@media (max-width: 768px) {
+    /* 隱藏校徽區域 */
+    .schoolLogo,
+    .topBar {
+        display: none !important;
+    }
+    
+    /* 強制顯示按鈕 */
+    #change_pwd,
+    #relogin {
+        position: fixed !important;
+        right: 0 !important;
+        bottom: 20px !important;
+        z-index: 999 !important;
+        flex-shrink: 0 !important;
+    }
+    #change_pwd{
+        right: 80px !important;
+    }
+    
+    /* 第一格隱藏 */
+    table[width="100%"] td[width="50%"] {
+        display: none !important;
+    }
+    
+    /* 中間格 flex 排版 */
+    table[width="100%"] td[style*="vertical-align:bottom"] {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 4px 8px !important;
+        padding: 6px 0 !important;
+    }
+    
+    /* 按鈕容器：強制換行並靠右 */
+    #change_pwd {
+        flex-basis: 100% !important;
+        text-align: right !important;
+    }
+    
+    /* 或者讓按鈕區域獨立成一行 */
+    table[width="100%"] td[style*="vertical-align:bottom"]::after {
+        content: "" !important;
+        flex-basis: 100% !important;
+        height: 0 !important;
+    }
+    
+    /* 按鈕組靠右 */
+    #change_pwd {
+        order: 999 !important;
+    }
+    
+    /* 表格寬度固定 */
+    table[width="100%"] {
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+}
+
