@@ -5,19 +5,19 @@
     font-family: 'Taipei Sans TC';
     font-style: normal;
     font-weight: 300;
-    src: url('./font/TaipeiSansTCBeta-Light.ttf') format('truetype');
+    src: url('/font/TaipeiSansTCBeta-Light.ttf') format('truetype');
 }
 @font-face {
     font-family: 'Taipei Sans TC';
     font-style: normal;
     font-weight: 400;
-    src: url('./font/TaipeiSansTCBeta-Regular.ttf') format('truetype');
+    src: url('/font/TaipeiSansTCBeta-Regular.ttf') format('truetype');
 }
 @font-face {
     font-family: 'Taipei Sans TC';
     font-style: normal;
     font-weight: 700;
-    src: url('./font/TaipeiSansTCBeta-Bold.ttf') format('truetype');
+    src: url('/font/TaipeiSansTCBeta-Bold.ttf') format('truetype');
 }
 
 /* 全域字型設定 */

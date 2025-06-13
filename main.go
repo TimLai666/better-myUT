@@ -17,6 +17,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// 輔助函數
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 type ProxyServer struct {
 	client     *http.Client
 	targetHost string // upstream 目標網站
@@ -24,7 +32,15 @@ type ProxyServer struct {
 }
 
 func NewProxyServer() *ProxyServer {
-	jar, _ := cookiejar.New(nil)
+	// 創建一個更寬鬆的cookie jar設置
+	jar, err := cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: nil, // 允許更寬鬆的cookie處理
+	})
+	if err != nil {
+		log.Printf("警告：創建cookie jar失敗: %v", err)
+		jar, _ = cookiejar.New(nil)
+	}
+
 	client := &http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
@@ -41,6 +57,8 @@ func NewProxyServer() *ProxyServer {
 	if public == "" {
 		public = "http://127.0.0.1:8080"
 	}
+
+	log.Printf("代理伺服器設置 - 目標: %s, 公開: %s", target, public)
 
 	return &ProxyServer{
 		client:     client,
@@ -76,13 +94,6 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 複製回應 headers，但排除某些不應該轉發的 headers
 	for key, values := range finalResp.Header {
-		// 跳過某些不應該轉發的 headers
-		// if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
-		// 	key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
-		// 	key == "Transfer-Encoding" || key == "Upgrade" {
-		// 	continue
-		// }
-
 		// 如果我們修改了 HTML 內容，就不要複製 Content-Length header
 		if isHTML && strings.ToLower(key) == "content-length" {
 			continue
@@ -119,11 +130,14 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, error) {
 	maxRedirects := 100
 
-	// 處理路徑：去掉 /utaipei 前綴
-	currentURL := p.targetHost + r.URL.Path
+	// 使用完整路徑，不去掉前綴
+	path := r.URL.Path
+	currentURL := p.targetHost + path
 	if r.URL.RawQuery != "" {
 		currentURL += "?" + r.URL.RawQuery
 	}
+
+	log.Printf("URL路徑處理: %s -> %s", r.URL.Path, currentURL)
 
 	// 保存原始請求的 body（如果有的話）
 	var bodyBytes []byte
@@ -153,12 +167,21 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 
 		// 複製原始請求的 headers
 		for key, values := range r.Header {
-			// 跳過某些不應該轉發的 headers
-			// if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
-			// 	key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
-			// 	key == "Transfer-Encoding" || key == "Upgrade" {
-			// 	continue
-			// }
+			// 跳過某些可能會造成問題的headers
+			lowerKey := strings.ToLower(key)
+			if lowerKey == "host" {
+				continue // Host header 已經在下面單獨設置
+			}
+
+			// 特別處理Cookie header
+			if lowerKey == "cookie" {
+				for _, value := range values {
+					// 記錄原始cookie
+					log.Printf("原始Cookie: %s", value)
+					proxyReq.Header.Add(key, value)
+				}
+				continue
+			}
 
 			for _, value := range values {
 				proxyReq.Header.Add(key, value)
@@ -167,6 +190,34 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 
 		// 設置正確的 Host header
 		proxyReq.Host = proxyReq.URL.Host
+
+		// 確保重要的認證相關headers正確設置
+		if proxyReq.Header.Get("Referer") == "" && r.Header.Get("Referer") != "" {
+			// 將Referer中的代理地址替換為目標地址
+			referer := r.Header.Get("Referer")
+			referer = strings.ReplaceAll(referer, p.publicHost, p.targetHost)
+			proxyReq.Header.Set("Referer", referer)
+		}
+
+		// 確保User-Agent正確傳遞
+		if proxyReq.Header.Get("User-Agent") == "" && r.Header.Get("User-Agent") != "" {
+			proxyReq.Header.Set("User-Agent", r.Header.Get("User-Agent"))
+		}
+
+		// 對於Ajax請求，確保必要的headers
+		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
+			proxyReq.Header.Set("X-Requested-With", "XMLHttpRequest")
+		}
+
+		// 設置Origin header（對於CORS很重要）
+		if origin := r.Header.Get("Origin"); origin != "" {
+			// 將Origin中的代理地址替換為目標地址
+			origin = strings.ReplaceAll(origin, p.publicHost, p.targetHost)
+			proxyReq.Header.Set("Origin", origin)
+		} else if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
+			// 對於修改性請求，如果沒有Origin則設置一個
+			proxyReq.Header.Set("Origin", p.targetHost)
+		}
 
 		// 創建不跟隨重定向的 client
 		tempClient := &http.Client{
@@ -419,13 +470,6 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	html = strings.ReplaceAll(html, `parent.location="https://my.utaipei.edu.tw`, `parent.location="`+proxyHost)
 	html = strings.ReplaceAll(html, `top.location='https://my.utaipei.edu.tw`, `top.location='`+proxyHost)
 	html = strings.ReplaceAll(html, `parent.location='https://my.utaipei.edu.tw`, `parent.location='`+proxyHost)
-
-	// 防止頁面自行跳轉到 perchk.jsp
-	html = strings.ReplaceAll(html, `top.location="perchk.jsp"`, `top.location="/utaipei/index_sky.html"`)
-	html = strings.ReplaceAll(html, `top.location='perchk.jsp'`, `top.location='/utaipei/index_sky.html'`)
-	html = strings.ReplaceAll(html, `parent.location="perchk.jsp"`, `parent.location="/utaipei/index_sky.html'`)
-	html = strings.ReplaceAll(html, `parent.location='perchk.jsp'`, `parent.location='/utaipei/index_sky.html'`)
-
 	return html
 }
 
@@ -440,6 +484,23 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 	// 記錄請求
 	log.Printf("收到請求: %s %s", c.Request.Method, c.Request.URL.String())
 
+	// 詳細記錄認證相關的headers（用於除錯）
+	if cookies := c.Request.Header.Get("Cookie"); cookies != "" {
+		log.Printf("Cookie: %s", cookies)
+	}
+	if userAgent := c.Request.Header.Get("User-Agent"); userAgent != "" {
+		log.Printf("User-Agent: %s", userAgent)
+	}
+	if xRequestedWith := c.Request.Header.Get("X-Requested-With"); xRequestedWith != "" {
+		log.Printf("X-Requested-With: %s", xRequestedWith)
+	}
+	if referer := c.Request.Header.Get("Referer"); referer != "" {
+		log.Printf("Referer: %s", referer)
+	}
+	if origin := c.Request.Header.Get("Origin"); origin != "" {
+		log.Printf("Origin: %s", origin)
+	}
+
 	// 使用既有邏輯執行代理請求，包含自動重定向
 	resp, body, err := p.doProxyRequest(c.Request)
 	if err != nil {
@@ -453,12 +514,87 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 	contentType := resp.Header.Get("Content-Type")
 	isHTML := strings.Contains(strings.ToLower(contentType), "text/html")
 
-	// 排除清單：不注入 favorite.jsp
+	// 檢查是否為二進制文件（字體、圖片等）
+	isBinaryFile := false
+	lowerContentType := strings.ToLower(contentType)
+	lowerPath := strings.ToLower(c.Request.URL.Path)
+
+	// 檢查Content-Type與路徑是否匹配
+	if (strings.HasSuffix(lowerPath, ".ttf") ||
+		strings.HasSuffix(lowerPath, ".woff") ||
+		strings.HasSuffix(lowerPath, ".woff2") ||
+		strings.HasSuffix(lowerPath, ".otf") ||
+		strings.HasSuffix(lowerPath, ".eot")) &&
+		!strings.Contains(lowerContentType, "font") {
+		log.Printf("⚠️  字體文件Content-Type不匹配! 路徑: %s, Content-Type: %s", c.Request.URL.Path, contentType)
+		log.Printf("回應前100字元: %s", string(body[:min(100, len(body))]))
+
+		// 檢查是否實際是字體文件內容
+		if len(body) > 4 {
+			// WOFF文件以"wOFF"開頭
+			if string(body[:4]) == "wOFF" {
+				log.Printf("檢測到WOFF字體文件，修正Content-Type")
+				isBinaryFile = true
+				if strings.HasSuffix(lowerPath, ".woff2") {
+					contentType = "font/woff2"
+				} else {
+					contentType = "font/woff"
+				}
+			}
+			// TTF文件通常以特定字節序列開頭
+			if len(body) > 8 && (body[0] == 0x00 && body[1] == 0x01 && body[2] == 0x00 && body[3] == 0x00) {
+				log.Printf("檢測到TTF字體文件，修正Content-Type")
+				isBinaryFile = true
+				contentType = "font/ttf"
+			}
+		}
+	}
+
+	if strings.Contains(lowerContentType, "font") ||
+		strings.Contains(lowerContentType, "image") ||
+		strings.Contains(lowerContentType, "video") ||
+		strings.Contains(lowerContentType, "audio") ||
+		strings.Contains(lowerContentType, "application/octet-stream") ||
+		strings.Contains(lowerContentType, "application/pdf") ||
+		strings.Contains(lowerContentType, "application/font") ||
+		strings.Contains(lowerContentType, "application/x-font") ||
+		strings.HasSuffix(lowerPath, ".ttf") ||
+		strings.HasSuffix(lowerPath, ".otf") ||
+		strings.HasSuffix(lowerPath, ".woff") ||
+		strings.HasSuffix(lowerPath, ".woff2") ||
+		strings.HasSuffix(lowerPath, ".eot") ||
+		strings.HasSuffix(lowerPath, ".svg") ||
+		strings.HasSuffix(lowerPath, ".png") ||
+		strings.HasSuffix(lowerPath, ".jpg") ||
+		strings.HasSuffix(lowerPath, ".jpeg") ||
+		strings.HasSuffix(lowerPath, ".gif") ||
+		strings.HasSuffix(lowerPath, ".ico") ||
+		strings.HasSuffix(lowerPath, ".webp") ||
+		strings.HasSuffix(lowerPath, ".css") ||
+		strings.HasSuffix(lowerPath, ".js") ||
+		strings.Contains(lowerPath, "/font") {
+		isBinaryFile = true
+		log.Printf("檢測到二進制/靜態文件: %s (Content-Type: %s)", c.Request.URL.Path, contentType)
+	}
+
+	// 排除清單：不注入 favorite.jsp、API路徑和二進制文件
 	reqPath := strings.ToLower(c.Request.URL.Path)
-	shouldInject := isHTML && !strings.HasSuffix(reqPath, "/favorite.jsp")
+	shouldInject := isHTML && !isBinaryFile &&
+		!strings.HasSuffix(reqPath, "/favorite.jsp") &&
+		!strings.Contains(reqPath, "_api.jsp") &&
+		!strings.Contains(reqPath, "/api/") &&
+		!strings.Contains(reqPath, "api.jsp")
 
 	if shouldInject {
 		body = p.optimizeHTML(body)
+		log.Printf("已對HTML內容進行優化")
+	} else if isBinaryFile {
+		log.Printf("跳過二進制文件的HTML優化")
+	}
+
+	// 特別記錄API回應內容（用於除錯登入狀態）
+	if strings.Contains(reqPath, "favorite_api.jsp") || strings.Contains(reqPath, "api") {
+		log.Printf("API回應內容 (%s): %s", c.Request.URL.Path, string(body[:min(500, len(body))]))
 	}
 
 	// 確保後續邏輯知道是否修改過 HTML
@@ -470,9 +606,62 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 		if isHTML && strings.ToLower(key) == "content-length" {
 			continue
 		}
+
+		// 處理Set-Cookie headers - 需要將domain修改為代理domain
+		if strings.ToLower(key) == "set-cookie" {
+			for _, value := range values {
+				// 將cookie中的domain從原站改為代理站
+				modifiedCookie := p.transformSetCookie(value)
+				c.Writer.Header().Add(key, modifiedCookie)
+			}
+			continue
+		}
+
 		for _, value := range values {
 			c.Writer.Header().Add(key, value)
 		}
+	}
+
+	// 修正字體文件的Content-Type
+	if isBinaryFile {
+		if strings.HasSuffix(lowerPath, ".ttf") {
+			c.Writer.Header().Set("Content-Type", "font/ttf")
+		} else if strings.HasSuffix(lowerPath, ".woff") {
+			c.Writer.Header().Set("Content-Type", "font/woff")
+		} else if strings.HasSuffix(lowerPath, ".woff2") {
+			c.Writer.Header().Set("Content-Type", "font/woff2")
+		} else if strings.HasSuffix(lowerPath, ".eot") {
+			c.Writer.Header().Set("Content-Type", "application/vnd.ms-fontobject")
+		} else if strings.HasSuffix(lowerPath, ".otf") {
+			c.Writer.Header().Set("Content-Type", "font/otf")
+		}
+
+		// 如果我們之前修正了contentType，使用修正後的值
+		if contentType != resp.Header.Get("Content-Type") {
+			c.Writer.Header().Set("Content-Type", contentType)
+		}
+
+		// 確保二進制文件不會被快取禁用影響
+		c.Writer.Header().Del("Cache-Control")
+		c.Writer.Header().Del("Pragma")
+		c.Writer.Header().Del("Expires")
+		c.Writer.Header().Set("Cache-Control", "public, max-age=31536000")
+	}
+
+	// 添加CORS headers以支援Ajax請求
+	origin := c.Request.Header.Get("Origin")
+	if origin != "" && !isBinaryFile {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Set-Cookie")
+	}
+
+	// 處理OPTIONS預檢請求
+	if c.Request.Method == "OPTIONS" {
+		c.Status(http.StatusOK)
+		return
 	}
 
 	// 如為 HTML，添加我們自己的 Content-Length
@@ -486,6 +675,45 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 	// 回傳 body
 	c.Writer.Write(body)
 	log.Printf("完成代理請求 (gin)")
+}
+
+// 轉換Set-Cookie header，使其適用於代理域名
+func (p *ProxyServer) transformSetCookie(cookieValue string) string {
+	// 解析代理主機的域名
+	proxyURL, err := url.Parse(p.publicHost)
+	if err != nil {
+		log.Printf("警告：無法解析代理主機URL: %v", err)
+		return cookieValue
+	}
+
+	proxyDomain := proxyURL.Hostname()
+	if proxyDomain == "127.0.0.1" || proxyDomain == "localhost" {
+		// 對於本地測試，移除domain限制
+		modifiedCookie := regexp.MustCompile(`(?i);\s*domain=[^;]*`).ReplaceAllString(cookieValue, "")
+		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+		return modifiedCookie
+	}
+
+	// 移除原始domain並設置為代理domain
+	modifiedCookie := regexp.MustCompile(`(?i);\s*domain=[^;]*`).ReplaceAllString(cookieValue, "")
+
+	// 如果是HTTPS代理就保留secure，否則移除
+	if !strings.HasPrefix(p.publicHost, "https://") {
+		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+	}
+
+	// 添加代理域名（如果不是localhost）
+	if proxyDomain != "127.0.0.1" && proxyDomain != "localhost" {
+		modifiedCookie += "; Domain=" + proxyDomain
+	}
+
+	// 確保cookie對所有路徑有效
+	if !strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+		modifiedCookie += "; Path=/"
+	}
+
+	log.Printf("Cookie轉換: %s -> %s", cookieValue, modifiedCookie)
+	return modifiedCookie
 }
 
 func main() {
@@ -508,6 +736,15 @@ func main() {
 	log.Printf("目標主機: %s", proxy.targetHost)
 
 	router := gin.Default()
+
+	// 添加cookie處理中間件
+	router.Use(func(c *gin.Context) {
+		// 在所有請求處理前記錄cookie資訊
+		if cookies := c.Request.Header.Get("Cookie"); cookies != "" {
+			log.Printf("收到客戶端Cookie: %s", cookies)
+		}
+		c.Next()
+	})
 
 	// 字型檔案路由
 	router.GET("/font/TaipeiSansTCBeta-Light.ttf", func(c *gin.Context) {
@@ -533,9 +770,6 @@ func main() {
 
 	// utaipei 路徑下的所有請求交給 proxy
 	router.Any("/utaipei/*proxyPath", proxy.ProxyHandler)
-
-	// 其他所有路徑也交給 proxy（但排除已定義的 /font 路由）
-	router.NoRoute(proxy.ProxyHandler)
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("啟動伺服器失敗: %v", err)
