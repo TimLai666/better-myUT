@@ -52,7 +52,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 檢查是否為 HTML 內容，需要進行優化
 	contentType := finalResp.Header.Get("Content-Type")
-	isHTML := strings.Contains(contentType, "text/html")
+	isHTML := strings.Contains(strings.ToLower(contentType), "text/html")
 
 	// 如果是 HTML 內容，進行 CSS 優化
 	if isHTML {
@@ -238,7 +238,7 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	htmlStr = p.replaceTargetURLs(htmlStr, "")
 
 	// 處理 frameset：將 frameset 轉換為直接內容插入
-	htmlStr = p.convertFramesetToContent(htmlStr)
+	// htmlStr = p.convertFramesetToContent(htmlStr)
 
 	// 移除右鍵選單禁用
 	htmlStr = strings.ReplaceAll(htmlStr, `oncontextmenu="CancelEvent (event, 'oncontextmenu')"`, "")
@@ -250,13 +250,13 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	htmlStr = regexp.MustCompile(`(?i)oncontextmenu\s*=\s*["'][^"']*["']`).ReplaceAllString(htmlStr, "")
 
 	// 讀取外部 injectedCSS 資料
-	responsiveCSS := "\n<style>\n" + assets.InjectedCSS + "\n</style>"
+	responsiveCSS := "<style>" + assets.InjectedCSS + "</style>"
 
 	// 檢查並插入 viewport
 	viewportMeta := `<meta name="viewport" content="width=device-width,initial-scale=1">`
 
 	if !strings.Contains(strings.ToLower(htmlStr), "<meta name=\"viewport\"") {
-		htmlStr = strings.Replace(htmlStr, "<head>", "<head>\n"+viewportMeta, 1)
+		htmlStr = strings.Replace(htmlStr, "<head>", "<head>"+viewportMeta, 1)
 	}
 
 	// 添加禁用快取的 meta 標籤
@@ -270,7 +270,7 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	// 在 </head> 之前插入 CSS 和 meta 標籤
 	headEndRegex := regexp.MustCompile(`(?i)</head>`)
 	if headEndRegex.MatchString(htmlStr) {
-		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+responsiveCSS+"\n</head>")
+		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+responsiveCSS+"</head>")
 	} else {
 		// 如果沒有 head 標籤，在 body 開始後插入
 		bodyStartRegex := regexp.MustCompile(`(?i)<body[^>]*>`)
@@ -306,7 +306,7 @@ func (p *ProxyServer) convertFramesetToContent(html string) string {
 			frameMatches := frameRegex.FindAllStringSubmatch(framesetMatch, -1)
 
 			var contentHTML strings.Builder
-			contentHTML.WriteString(`<div class="frameset-container">\n`)
+			contentHTML.WriteString(`<div class="frameset-container">`)
 
 			for idx, m := range frameMatches {
 				if len(m) < 2 {
@@ -327,7 +327,7 @@ func (p *ProxyServer) convertFramesetToContent(html string) string {
 </div>`, idx+1, src))
 			}
 
-			contentHTML.WriteString("\n</div>\n")
+			contentHTML.WriteString("</div>")
 
 			// 一份共用 CSS（插入一次即可）
 			framesetCSS := `
@@ -458,6 +458,12 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	html = strings.ReplaceAll(html, `top.location='https://my.utaipei.edu.tw`, `top.location='`+proxyHost)
 	html = strings.ReplaceAll(html, `parent.location='https://my.utaipei.edu.tw`, `parent.location='`+proxyHost)
 
+	// 防止頁面自行跳轉到 perchk.jsp
+	html = strings.ReplaceAll(html, `top.location="perchk.jsp"`, `top.location="/utaipei/index_sky.html"`)
+	html = strings.ReplaceAll(html, `top.location='perchk.jsp'`, `top.location='/utaipei/index_sky.html'`)
+	html = strings.ReplaceAll(html, `parent.location="perchk.jsp"`, `parent.location="/utaipei/index_sky.html'`)
+	html = strings.ReplaceAll(html, `parent.location='perchk.jsp'`, `parent.location='/utaipei/index_sky.html'`)
+
 	return html
 }
 
@@ -481,12 +487,20 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	// 檢查是否為 HTML，若是則注入 CSS/viewport
+	// 檢查是否為 HTML，且不在排除清單再進行注入
 	contentType := resp.Header.Get("Content-Type")
-	isHTML := strings.Contains(contentType, "text/html")
-	if isHTML {
+	isHTML := strings.Contains(strings.ToLower(contentType), "text/html")
+
+	// 排除清單：不注入 favorite.jsp
+	reqPath := strings.ToLower(c.Request.URL.Path)
+	shouldInject := isHTML && !strings.HasSuffix(reqPath, "/favorite.jsp")
+
+	if shouldInject {
 		body = p.optimizeHTML(body)
 	}
+
+	// 確保後續邏輯知道是否修改過 HTML
+	isHTML = shouldInject
 
 	// 複製 headers
 	for key, values := range resp.Header {
