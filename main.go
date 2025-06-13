@@ -154,11 +154,11 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 		// 複製原始請求的 headers
 		for key, values := range r.Header {
 			// 跳過某些不應該轉發的 headers
-			if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
-				key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
-				key == "Transfer-Encoding" || key == "Upgrade" {
-				continue
-			}
+			// if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
+			// 	key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
+			// 	key == "Transfer-Encoding" || key == "Upgrade" {
+			// 	continue
+			// }
 
 			for _, value := range values {
 				proxyReq.Header.Add(key, value)
