@@ -288,6 +288,242 @@ select:disabled {
     opacity: 0.6 !important;
 }
 
+/* ======== 超好看的檔案選擇按鈕（直接美化原生樣式）======== */
+
+/* 檔案選擇按鈕基礎樣式 */
+input[type="file"] {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: 8px 16px !important;
+    font-family: 'Taipei Sans TC', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 1.3 !important;
+    color: #374151 !important;
+    background: #f9fafb !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    outline: none !important;
+    transition: all 0.15s ease-in-out !important;
+    min-height: 36px !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    overflow: hidden !important;
+}
+
+/* 檔案選擇按鈕文字樣式 */
+input[type="file"]::file-selector-button {
+    background: transparent !important;
+    border: none !important;
+    color: #374151 !important;
+    font-family: 'Taipei Sans TC', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    padding: 0 8px 0 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    outline: none !important;
+}
+
+/* WebKit 瀏覽器樣式 */
+input[type="file"]::-webkit-file-upload-button {
+    background: transparent !important;
+    border: none !important;
+    color: #374151 !important;
+    font-family: 'Taipei Sans TC', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    padding: 0 8px 0 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    outline: none !important;
+}
+
+/* Hover 狀態 */
+input[type="file"]:hover {
+    background: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+input[type="file"]:hover::file-selector-button {
+    color: #1f2937 !important;
+}
+
+input[type="file"]:hover::-webkit-file-upload-button {
+    color: #1f2937 !important;
+}
+
+/* Focus 狀態 */
+input[type="file"]:focus {
+    border-color: #6b7280 !important;
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.15) !important;
+}
+
+/* Active 狀態 */
+input[type="file"]:active {
+    background: #e5e7eb !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 禁用狀態 */
+input[type="file"]:disabled {
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.6 !important;
+}
+
+input[type="file"]:disabled::file-selector-button {
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+input[type="file"]:disabled::-webkit-file-upload-button {
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+/* 多檔案選擇提示 */
+input[type="file"][multiple] {
+    position: relative !important;
+}
+
+input[type="file"][multiple]::after {
+    content: "（可選多個檔案）" !important;
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 11px !important;
+    color: #6b7280 !important;
+    pointer-events: none !important;
+}
+
+/* 檔案類型限制提示樣式 */
+input[type="file"][accept*="image"]::before {
+    content: "🖼️ " !important;
+    margin-right: 4px !important;
+}
+
+input[type="file"][accept*="pdf"]::before {
+    content: "📄 " !important;
+    margin-right: 4px !important;
+}
+
+input[type="file"][accept*="video"]::before {
+    content: "🎥 " !important;
+    margin-right: 4px !important;
+}
+
+input[type="file"][accept*="audio"]::before {
+    content: "🎵 " !important;
+    margin-right: 4px !important;
+}
+
+input[type="file"]:not([accept])::before {
+    content: "📁 " !important;
+    margin-right: 4px !important;
+}
+
+/* 不同顏色主題 */
+input[type="file"].btn-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
+}
+
+input[type="file"].btn-success:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+input[type="file"].btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+}
+
+input[type="file"].btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+input[type="file"].btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2) !important;
+}
+
+input[type="file"].btn-warning:hover {
+    background: linear-gradient(135deg, #d97706, #b45309) !important;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+input[type="file"].btn-secondary {
+    background: #f8fafc !important;
+    color: #475569 !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+input[type="file"].btn-secondary::file-selector-button {
+    color: #475569 !important;
+}
+
+input[type="file"].btn-secondary::-webkit-file-upload-button {
+    color: #475569 !important;
+}
+
+input[type="file"].btn-secondary:hover {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 尺寸變化 */
+input[type="file"].btn-sm {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    min-height: 36px !important;
+    border-radius: 6px !important;
+}
+
+input[type="file"].btn-sm::file-selector-button {
+    font-size: 12px !important;
+    padding: 0 8px 0 0 !important;
+}
+
+input[type="file"].btn-sm::-webkit-file-upload-button {
+    font-size: 12px !important;
+    padding: 0 8px 0 0 !important;
+}
+
+input[type="file"].btn-lg {
+    padding: 16px 28px !important;
+    font-size: 16px !important;
+    min-height: 52px !important;
+    border-radius: 10px !important;
+}
+
+input[type="file"].btn-lg::file-selector-button {
+    font-size: 16px !important;
+    padding: 0 16px 0 0 !important;
+}
+
+input[type="file"].btn-lg::-webkit-file-upload-button {
+    font-size: 16px !important;
+    padding: 0 16px 0 0 !important;
+}
+
+/* 全寬樣式 */
+input[type="file"].btn-block {
+    width: 100% !important;
+    display: flex !important;
+}
+
 /* 顯示/隱藏選單按鈕 */
 #switch {
     height: 30px !important;
