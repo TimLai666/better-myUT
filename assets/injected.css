@@ -30,6 +30,10 @@ html, body, * {
     pointer-events: auto !important;
 }
 
+.sbody {
+    padding: 15px 20px !important;
+}
+
 font {
     line-height: 1.5 !important;
 }
@@ -547,6 +551,19 @@ input[type="file"].btn-block {
 /* 搜尋按鈕 */
 #search {
     padding: 5px 8px !important;
+}
+
+/* 回上一頁按鈕樣式 */
+input[type="button"][value*="回上一頁"],
+input[type="button"][value*="返回"],
+input[type="button"][value*="上一頁"],
+input[type="submit"][value*="回上一頁"],
+input[type="submit"][value*="返回"],
+input[type="submit"][value*="上一頁"],
+button:contains("回上一頁"),
+button:contains("返回"),
+button:contains("上一頁") {
+    margin: 12px 0 !important;
 }
 
 /* -------- 側邊欄美化 -------- */
