@@ -509,8 +509,33 @@ func main() {
 
 	router := gin.Default()
 
-	// 所有路徑交給 proxy（包含根路徑）
-	router.Any("/*proxyPath", proxy.ProxyHandler)
+	// 字型檔案路由
+	router.GET("/font/TaipeiSansTCBeta-Light.ttf", func(c *gin.Context) {
+		c.Header("Content-Type", "font/ttf")
+		c.Header("Cache-Control", "public, max-age=31536000") // 1年快取
+		c.Data(http.StatusOK, "font/ttf", assets.TaipeiSansLight)
+	})
+
+	router.GET("/font/TaipeiSansTCBeta-Regular.ttf", func(c *gin.Context) {
+		c.Header("Content-Type", "font/ttf")
+		c.Header("Cache-Control", "public, max-age=31536000")
+		c.Data(http.StatusOK, "font/ttf", assets.TaipeiSansRegular)
+	})
+
+	router.GET("/font/TaipeiSansTCBeta-Bold.ttf", func(c *gin.Context) {
+		c.Header("Content-Type", "font/ttf")
+		c.Header("Cache-Control", "public, max-age=31536000")
+		c.Data(http.StatusOK, "font/ttf", assets.TaipeiSansBold)
+	})
+
+	// 根路徑處理
+	router.GET("/", proxy.ProxyHandler)
+
+	// utaipei 路徑下的所有請求交給 proxy
+	router.Any("/utaipei/*proxyPath", proxy.ProxyHandler)
+
+	// 其他所有路徑也交給 proxy（但排除已定義的 /font 路由）
+	router.NoRoute(proxy.ProxyHandler)
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("啟動伺服器失敗: %v", err)
