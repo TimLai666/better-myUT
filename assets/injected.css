@@ -1,7 +1,5 @@
 /* injected responsive CSS */
 
-/* 保守的響應式優化 - 只針對手機端做最小調整 */
-
 html, body, * {
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
@@ -9,51 +7,6 @@ html, body, * {
     user-select: text !important;
     pointer-events: auto !important;
 }
-
-/* @media screen and (max-width: 480px) {
-    body, html {
-        overflow-x: auto;
-        max-width: 100%;
-    }
-    table[width] {width: 100% !important; max-width: 100% !important;}
-    td[width] {width: auto !important; max-width: 100% !important;}
-    img {max-width: 100% !important; height: auto !important;}
-    input[type="text"], input[type="password"], select, textarea {
-        max-width: 100% !important; box-sizing: border-box; font-size: 16px !important;
-    }
-    input[type="button"], input[type="submit"], button {
-        min-width: auto; padding: 10px 15px; font-size: 14px; margin: 5px 2px;
-    }
-    iframe {max-width: 100% !important; border: none;}
-    div, span, p {word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;}
-    body, td, th, div, span, p {font-size: 14px !important; line-height: 1.5 !important;}
-    table {font-size: 13px; border-collapse: collapse;}
-    td, th {padding: 8px 4px !important; vertical-align: top;}
-    * {max-width: 100%; box-sizing: border-box;}
-    a {min-height: 44px; display: inline-block; padding: 8px; margin: 2px;}
-    .menu, .nav, ul, ol {list-style: none; padding: 0; margin: 0;}
-    td:empty, div:empty {display: none;}
-    #m_tree {max-width: 100% !important;}
-    #m_tree .ob_td span, #m_tree .ob_td div {font-size: 16px !important; padding: 8px 12px !important;}
-}
-
-@media screen and (min-width: 481px) and (max-width: 768px) {
-    img {max-width: 100% !important; height: auto !important;}
-    table[width] {max-width: 100% !important;}
-    iframe {max-width: 100% !important;}
-    input[type="text"], input[type="password"], select, textarea {font-size: 15px; padding: 8px;}
-    input[type="button"], input[type="submit"], button {padding: 9px 14px; font-size: 14px;}
-}
-
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    input[type="button"], input[type="submit"], button {margin: 2px 1px; padding: 6px 10px;}
-}
-
-@media print {
-    * {overflow: visible !important;}
-    .frameset-container {display: block !important;}
-    .frame-content iframe {display: none !important;}
-}  */
 
 #switch {
     height: 30px !important;
@@ -123,12 +76,8 @@ html, body, * {
 #m_tree .ob_td div:hover {
     background: #e8f0fe !important;
     color: #0366d6 !important;
-}
-/* 已展開 / 目前焦點項目 (inline style 可能會設 color:blue) */
-#m_tree .ob_td span[style*="color:blue"],
-#m_tree .ob_td div[style*="color:blue"] {
-    background: #e8f0fe !important;
-    color: #0366d6 !important;
+    display: block !important;
+    width: 100% !important;
 }
 
 #m_tree td[valign="top"] {
@@ -146,7 +95,61 @@ html, body, * {
     width: 100% !important;
 }
 
-/* 公告美化 */
+/* 公告視窗美化 -------------------------------------------------- */
 .ui-widget-content.ui-draggable {
-    width: 100dvw !important;
+    width: 99dvw !important;
+    height: 95dvh !important;
+    padding: 10px 20px !important;
+    max-height: 95dvh !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    color: #333 !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    overflow-y: auto !important;
 }
+
+/* 公告標題 */
+.ui-widget-content.ui-draggable h2,
+.ui-widget-content.ui-draggable .title {
+    margin: 0 0 12px 0 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #222 !important;
+}
+
+/* 公告按鈕美化 */
+.ui-widget-content.ui-draggable button,
+.ui-widget-content.ui-draggable .button,
+.ui-widget-content.ui-draggable input[type="button"] {
+    display: inline-block !important;
+    padding: 10px 20px !important;
+    background-color: #0366d6 !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease-in-out, transform 0.1s ease-in-out !important;
+}
+
+.ui-widget-content.ui-draggable button:hover,
+.ui-widget-content.ui-draggable .button:hover,
+.ui-widget-content.ui-draggable input[type="button"]:hover {
+    background-color: #024ea4 !important;
+}
+
+.ui-widget-content.ui-draggable button:active,
+.ui-widget-content.ui-draggable .button:active,
+.ui-widget-content.ui-draggable input[type="button"]:active {
+    transform: translateY(2px) !important;
+}
+
+/* -------- 若需其他自訂樣式請在此區塊新增 -------- */
+#master {
+    margin: 0 !important;
+}
+
