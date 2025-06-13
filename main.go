@@ -1,11 +1,13 @@
 package main
 
 import (
+	"better-myUT/assets"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -189,7 +191,19 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			if strings.HasPrefix(location, "/") {
 				currentURL = p.targetHost + location
 			} else if strings.HasPrefix(location, "http") {
-				currentURL = location
+				// 若導向 localhost，改寫成目標主機路徑
+				if strings.HasPrefix(location, "http://localhost") || strings.HasPrefix(location, "https://localhost") {
+					if parsed, err := url.Parse(location); err == nil {
+						currentURL = p.targetHost + parsed.Path
+						if parsed.RawQuery != "" {
+							currentURL += "?" + parsed.RawQuery
+						}
+					} else {
+						currentURL = p.targetHost
+					}
+				} else {
+					currentURL = location
+				}
 			} else {
 				// 相對路徑，需要基於當前 URL 構建
 				baseURL := currentURL
@@ -235,204 +249,15 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	// 移除可能的右鍵禁用 JavaScript
 	htmlStr = regexp.MustCompile(`(?i)oncontextmenu\s*=\s*["'][^"']*["']`).ReplaceAllString(htmlStr, "")
 
-	// 添加響應式 CSS
-	responsiveCSS := `
-<style>
-/* 保守的響應式優化 - 只針對手機端做最小調整 */
+	// 讀取外部 injectedCSS 資料
+	responsiveCSS := "\n<style>\n" + assets.InjectedCSS + "\n</style>"
 
-/* 確保右鍵選單可用 */
-html, body, * {
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    user-select: text !important;
-    pointer-events: auto !important;
-}
+	// 檢查並插入 viewport
+	viewportMeta := `<meta name="viewport" content="width=device-width,initial-scale=1">`
 
-/* 手機版專用 - 只在小螢幕時啟用 */
-@media screen and (max-width: 480px) {
-    /* 確保頁面不會水平捲動 */
-    body, html {
-        overflow-x: auto;
-        max-width: 100%;
-    }
-    
-    /* 由於已將 frameset 轉換為普通 HTML 結構，不再需要 frameset 特定樣式 */
-    
-    /* 讓固定寬度的元素變為響應式 */
-    table[width] {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    
-    td[width] {
-        width: auto !important;
-        max-width: 100% !important;
-    }
-    
-    /* 讓圖片響應式 */
-    img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-    
-    /* 表單元素響應式 */
-    input[type="text"], input[type="password"], select, textarea {
-        max-width: 100% !important;
-        box-sizing: border-box;
-        font-size: 16px !important; /* 防止iOS縮放 */
-    }
-    
-    /* 按鈕稍微調整 */
-    input[type="button"], input[type="submit"], button {
-        min-width: auto;
-        padding: 10px 15px;
-        font-size: 14px;
-        margin: 5px 2px;
-        touch-action: manipulation; /* 改善觸控體驗 */
-    }
-    
-    /* iframe 響應式 */
-    iframe {
-        max-width: 100% !important;
-        border: none;
-    }
-    
-    /* 處理可能過寬的內容 */
-    div, span, p {
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-        hyphens: auto;
-    }
-    
-    /* 字體稍微調整以便閱讀 */
-    body, td, th, div, span, p {
-        font-size: 14px !important;
-        line-height: 1.5 !important;
-    }
-    
-    /* 表格在小螢幕下的調整 */
-    table {
-        font-size: 13px;
-        border-collapse: collapse;
-    }
-    
-    /* 表格單元格調整 */
-    td, th {
-        padding: 8px 4px !important;
-        vertical-align: top;
-    }
-    
-    /* 確保內容不會被截斷 */
-    * {
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-    
-    /* 改善連結的觸控體驗 */
-    a {
-        min-height: 44px;
-        display: inline-block;
-        padding: 8px;
-        margin: 2px;
-    }
-    
-    /* 選單和導航優化 */
-    .menu, .nav, ul, ol {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    /* 隱藏可能不必要的空白區域 */
-    td:empty, div:empty {
-        display: none;
-    }
-}
-
-/* 中等螢幕調整 (平板) */
-@media screen and (min-width: 481px) and (max-width: 768px) {
-    /* 由於已將 frameset 轉換為普通 HTML 結構，不再需要 frameset 特定樣式 */
-    
-    img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-    
-    table[width] {
-        max-width: 100% !important;
-    }
-    
-    iframe {
-        max-width: 100% !important;
-    }
-    
-    /* 表單元素在平板上的調整 */
-    input[type="text"], input[type="password"], select, textarea {
-        font-size: 15px;
-        padding: 8px;
-    }
-    
-    /* 按鈕在平板上的調整 */
-    input[type="button"], input[type="submit"], button {
-        padding: 9px 14px;
-        font-size: 14px;
-    }
-}
-
-/* 大螢幕優化 */
-@media screen and (min-width: 769px) {
-    /* 由於已將 frameset 轉換為普通 HTML 結構，不再需要 frameset 特定樣式 */
-}
-
-/* 橫向模式優化 */
-@media screen and (max-width: 768px) and (orientation: landscape) {
-    /* 由於已將 frameset 轉換為普通 HTML 結構，不再需要 frameset 特定樣式 */
-    
-    /* 減少按鈕間距 */
-    input[type="button"], input[type="submit"], button {
-        margin: 2px 1px;
-        padding: 6px 10px;
-    }
-}
-
-/* 打印優化 */
-@media print {
-    * {
-        overflow: visible !important;
-    }
-    
-    /* 由於已將 frameset 轉換為普通 HTML 結構，可以正常打印 */
-    .frameset-container {
-        display: block !important;
-    }
-    
-    .frame-content iframe {
-        display: none !important; /* 打印時隱藏 iframe */
-    }
-}
-
-/* 高對比度模式支援 */
-@media (prefers-contrast: high) {
-    input[type="button"], input[type="submit"], button {
-        border: 2px solid;
-    }
-    
-    a {
-        text-decoration: underline;
-    }
-}
-
-/* 減少動畫偏好支援 */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-</style>
-`
+	if !strings.Contains(strings.ToLower(htmlStr), "<meta name=\"viewport\"") {
+		htmlStr = strings.Replace(htmlStr, "<head>", "<head>\n"+viewportMeta, 1)
+	}
 
 	// 添加禁用快取的 meta 標籤
 	noCacheMetaTags := `
@@ -449,9 +274,14 @@ html, body, * {
 	} else {
 		// 如果沒有 head 標籤，在 body 開始後插入
 		bodyStartRegex := regexp.MustCompile(`(?i)<body[^>]*>`)
-		htmlStr = bodyStartRegex.ReplaceAllStringFunc(htmlStr, func(match string) string {
-			return match + noCacheMetaTags + responsiveCSS
-		})
+		if bodyStartRegex.MatchString(htmlStr) {
+			htmlStr = bodyStartRegex.ReplaceAllStringFunc(htmlStr, func(match string) string {
+				return match + noCacheMetaTags + responsiveCSS
+			})
+		} else {
+			// 如果既沒有 <head> 也沒有 <body>，最後採用最保險方案：直接把 CSS 及 meta 標籤放到最前面
+			htmlStr = noCacheMetaTags + viewportMeta + responsiveCSS + htmlStr
+		}
 	}
 
 	// 為表格添加 data-label 屬性以支援響應式設計
@@ -585,6 +415,11 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	html = strings.ReplaceAll(html, "https://my.utaipei.edu.tw", proxyHost)
 	html = strings.ReplaceAll(html, "http://my.utaipei.edu.tw", proxyHost)
 
+	// 將可能寫成 localhost 的 URL 一併導向代理（避免撈取本機 80 port）
+	html = strings.ReplaceAll(html, "https://localhost", proxyHost+"/utaipei")
+	html = strings.ReplaceAll(html, "http://localhost", proxyHost+"/utaipei")
+	html = strings.ReplaceAll(html, "//localhost", proxyHost+"/utaipei")
+
 	// 處理各種形式的 JavaScript 重定向
 	html = strings.ReplaceAll(html, `window.location.href="https://my.utaipei.edu.tw`, `window.location.href="`+proxyHost)
 	html = strings.ReplaceAll(html, `window.location="https://my.utaipei.edu.tw`, `window.location="`+proxyHost)
@@ -646,16 +481,27 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// 檢查是否為 HTML，若是則注入 CSS/viewport
+	contentType := resp.Header.Get("Content-Type")
+	isHTML := strings.Contains(contentType, "text/html")
+	if isHTML {
+		body = p.optimizeHTML(body)
+	}
+
 	// 複製 headers
 	for key, values := range resp.Header {
-		if key == "Connection" || key == "Keep-Alive" || key == "Proxy-Authenticate" ||
-			key == "Proxy-Authorization" || key == "Te" || key == "Trailers" ||
-			key == "Transfer-Encoding" || key == "Upgrade" {
+		// 若我們修改了 HTML 內容，就不要複製 Content-Length
+		if isHTML && strings.ToLower(key) == "content-length" {
 			continue
 		}
 		for _, value := range values {
 			c.Writer.Header().Add(key, value)
 		}
+	}
+
+	// 如為 HTML，添加我們自己的 Content-Length
+	if isHTML {
+		c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
 	}
 
 	// 直接沿用遠端狀態碼

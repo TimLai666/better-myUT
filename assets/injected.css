@@ -1,0 +1,73 @@
+/* injected responsive CSS */
+
+/* 保守的響應式優化 - 只針對手機端做最小調整 */
+
+html, body, * {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+    pointer-events: auto !important;
+}
+
+@media screen and (max-width: 480px) {
+    body, html {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    table[width] {width: 100% !important; max-width: 100% !important;}
+    td[width] {width: auto !important; max-width: 100% !important;}
+    img {max-width: 100% !important; height: auto !important;}
+    input[type="text"], input[type="password"], select, textarea {
+        max-width: 100% !important; box-sizing: border-box; font-size: 16px !important;
+    }
+    input[type="button"], input[type="submit"], button {
+        min-width: auto; padding: 10px 15px; font-size: 14px; margin: 5px 2px;
+    }
+    iframe {max-width: 100% !important; border: none;}
+    div, span, p {word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;}
+    body, td, th, div, span, p {font-size: 14px !important; line-height: 1.5 !important;}
+    table {font-size: 13px; border-collapse: collapse;}
+    td, th {padding: 8px 4px !important; vertical-align: top;}
+    * {max-width: 100%; box-sizing: border-box;}
+    a {min-height: 44px; display: inline-block; padding: 8px; margin: 2px;}
+    .menu, .nav, ul, ol {list-style: none; padding: 0; margin: 0;}
+    td:empty, div:empty {display: none;}
+}
+
+@media screen and (min-width: 481px) and (max-width: 768px) {
+    img {max-width: 100% !important; height: auto !important;}
+    table[width] {max-width: 100% !important;}
+    iframe {max-width: 100% !important;}
+    input[type="text"], input[type="password"], select, textarea {font-size: 15px; padding: 8px;}
+    input[type="button"], input[type="submit"], button {padding: 9px 14px; font-size: 14px;}
+}
+
+@media screen and (max-width: 768px) and (orientation: landscape) {
+    input[type="button"], input[type="submit"], button {margin: 2px 1px; padding: 6px 10px;}
+}
+
+@media print {
+    * {overflow: visible !important;}
+    .frameset-container {display: block !important;}
+    .frame-content iframe {display: none !important;}
+} 
+
+#switch {
+    height: 30px !important;
+    padding: 5px 2px !important;
+    position: fixed !important;
+    display: block !important;
+    top: 70px !important;
+    left: 20px !important;
+    z-index: 1000 !important;
+    background-color: #fff !important;
+    color: #000 !important;
+    border-radius: 5px !important;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1) !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
+
