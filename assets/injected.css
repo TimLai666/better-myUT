@@ -202,6 +202,17 @@ html, body, * {
         table-layout: fixed !important;
     }
     
+    /* 調整欄位寬度比例 */
+    .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
+        width: auto !important;
+    }
+    
+    .idxHeader table[width="100%"] td:last-child {
+        width: 120px !important;
+        min-width: 120px !important;
+        max-width: 120px !important;
+    }
+    
     /* 隱藏第一格空白 */
     .idxHeader table[width="100%"] td[width="50%"] {
         display: none !important;
