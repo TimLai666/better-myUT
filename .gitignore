@@ -1,1 +1,39 @@
+# 環境變數檔案（包含敏感資訊）
 .env
+
+# Go 編譯產物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+better-myUT
+better-myUT.exe
+
+# 測試檔案
+*.test
+
+# 輸出檔案
+*.out
+
+# Go 工作區檔案
+go.work
+
+# IDE 檔案
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 作業系統檔案
+.DS_Store
+Thumbs.db
+
+# 日誌檔案
+*.log
+
+# Coverage 檔案
+*.coverage
+coverage.txt
+coverage.html
