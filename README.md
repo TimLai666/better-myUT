@@ -1,111 +1,115 @@
-# 更好的校務系統 (Better myUT)
+# 更好的校務系統（better-myUT）
 
-這是一個針對臺北市立大學校務系統的響應式設計優化代理伺服器。
-
-## 功能特色
-
-- **響應式設計**：自動為校務系統添加響應式 CSS，讓網站在手機和平板上也能正常瀏覽
-- **會話維持**：保持與原始校務系統的登入狀態
-- **表格優化**：針對校務系統的表格進行手機版優化
-- **UI 美化**：改善按鈕、表單等元素的視覺效果
-
-## 安裝與設定
-
-### 1. 克隆專案
-```bash
-git clone https://github.com/TimLai666/better-myUT
-cd better-myUT
-```
-
-### 2. 安裝依賴
-```bash
-go mod tidy
-```
-
-### 3. 設定環境變數
-複製 `env.example` 為 `.env` 並填入您的資訊：
-```bash
-cp env.example .env
-```
-
-編輯 `.env` 文件：
-```env
-# 伺服器設定
-# 內部監聽的埠號（容器內或本機）
-PORT=8080
-
-# 上游校務系統網址（通常保持預設即可）
-TARGET_HOST=https://my.utaipei.edu.tw
-
-# 對外公開的代理網址（*非常重要*）
-# 用來在 HTML 中把所有重定向、超連結改寫成部署後的網域，
-# 例如您透過 Nginx 反向代理到 https://your-domain.com 時：
-PROXY_HOST=https://your-domain.com
-```
-
-## 使用方法
-
-### 啟動伺服器
-```bash
-go run main.go
-```
-
-### 本地訪問
-在瀏覽器中開啟：
-```
-http://localhost:8080/utaipei/index_sky.html
-```
+> 讓臺北市立大學校務資訊系統在行動裝置上也能有更佳體驗！
+>
+> 本專案以 **Go 1.24** 與 **Gin Web Framework** 所撰寫的 **反向代理伺服器**，在不中斷既有功能的前提下，動態注入響應式 CSS/JS，並修正頁面快取、重定向與 Frameset 等問題。
 
 ---
 
-## Docker 快速部署
+## 功能總覽
+
+| 分類 | 功能描述 |
+| --- | --- |
+| 響應式介面 | • 於所有 HTML 回應中自動注入 `injected.css`，將原始表格轉為卡片式排版、優化選單與按鈕尺寸。<br/>• 自動為 `<table>` 標籤加上 `data-label` 屬性，利於 CSS 以 `::before` 呈現欄位名稱。 |
+| 相容性修補 | • 透過 `injected.js` 隱藏在手機上不需要的按鈕並修正 frameset 切換邏輯。 |
+| 代理強化 | • 最高 10 次的自動跟隨重定向。<br/>• 智慧重寫 `Location` / 內嵌 URL 以回到代理本身。<br/>• 內建 CookieJar 維持與上游（my.utaipei.edu.tw）的登入狀態。 |
+| 快取控制 | • 自行覆寫 `Cache-Control` / `Pragma` / `Expires` 標頭與對應 HTML `<meta>`，確保前端永遠取得最新內容。 |
+| 部署便利 | • 單一可執行檔（Windows/macOS/Linux）或透過 Docker image 快速啟動。 |
+
+---
+
+## 快速開始
+
+### 1. 下載或編譯
+
+```bash
+# 直接抓取範例二進位（以 linux amd64 為例）
+curl -L -o better-myUT https://github.com/TimLai666/better-myUT/releases/latest/download/better-myUT-linux-amd64
+chmod +x better-myUT
+
+# 或自行編譯
+ go build -o better-myUT main.go
+```
+
+### 2. 建立 `.env`
+
+專案中 **不再提供 `env.example`**，請直接於可執行檔相同目錄新增 `.env`：
+
+```dotenv
+# 伺服器監聽埠（預設 8080）
+PORT=8080
+
+# 上游校務系統網址，理論上保持預設即可
+TARGET_HOST=https://my.utaipei.edu.tw
+
+# 部署後對外的完整網址（⚠️ 極度重要）
+# 代理會利用此值把所有絕對網址/重定向改寫回自身
+PROXY_HOST=https://your.domain.com
+```
+
+### 3. 執行
+
+```bash
+./better-myUT   # 或 go run main.go
+```
+
+瀏覽器進入 `http://localhost:8080/utaipei/index_sky.html`，即可看到行動版優化後的校務系統。
+
+---
+
+## Docker 部署
 
 ```bash
 docker build -t better-myut .
 
-# 例如要對外提供 https://example.com/ 服務，可用 80:8080 並設定 PROXY_HOST
 docker run -d --name myut -p 80:8080 \
-  -e PROXY_HOST=https://example.com \
+  -e PROXY_HOST=https://your.domain.com \
   -e TARGET_HOST=https://my.utaipei.edu.tw \
   better-myut
 ```
 
-若您已經有前端 Nginx / Traefik 等反向代理，可僅暴露內部埠，並在代理層設定對應路徑。
+若前方已有 Nginx / Traefik 等反向代理，僅需將容器埠 (8080) 對接即可。
 
-## 技術細節
+---
 
-### 架構說明
-- **代理伺服器**：使用 Go 標準庫實現 HTTP 代理
-- **會話管理**：使用 `cookiejar` 維持 cookie 會話
-- **HTML 處理**：動態注入響應式 CSS 和優化代碼
-- **環境變數**：使用 `godotenv` 管理配置
+## 進階設定
 
-### 響應式設計特色
-- 表格在手機版會轉換為卡片式佈局
-- 自動調整字體大小和間距
-- 優化表單元素的觸控體驗
-- 改善導航菜單的手機顯示
+| 變數 | 預設值 | 說明 |
+| --- | --- | --- |
+| `PORT` | `8080` | 內部監聽埠號 |
+| `TARGET_HOST` | `https://my.utaipei.edu.tw` | 上游校務系統根網址 |
+| `PROXY_HOST` | `http://127.0.0.1:8080` | 代理公開網址，用於 HTML 重寫 |
 
-## 故障排除
+---
 
-### 常見問題
+## 架構細節
 
-**Q: 無法連接到校務系統**
-A: 檢查網路連接和 `TARGET_HOST` 設定是否正確
+1. **Gin 路由**：`router.Any("/*proxyPath", proxy.ProxyHandler)` 對所有路徑進行攔截。
+2. **ProxyHandler**：呼叫 `doProxyRequest` 進行真正的 HTTP 轉發並處理 30x 重定向。
+3. **optimizeHTML**：
+   - 置換所有指向原站的 URL → 代理本身。
+   - 注入 `InjectedCSS` / `InjectedJS` 與 `<meta viewport>`、快取禁用標籤。
+   - 移除干擾觸控體驗的 `oncontextmenu`、右鍵鎖定程式碼。
+4. **assets/**：利用 Go `embed` 嵌入編譯後產生的二進位，部署更輕鬆。
 
-**Q: 頁面顯示不正常**
-A: 校務系統可能更新了結構，需要調整 CSS 或 HTML 處理邏輯
+---
 
-### 日誌查看
-程式會輸出詳細的日誌訊息，包括：
-- 伺服器啟動資訊
-- 登入狀態
-- 請求處理狀況
+## 常見問題
 
-## 貢獻指南
+| 問題 | 解決建議 |
+| --- | --- |
+| 無法登入/顯示 `Bad Gateway` | 確認校務系統是否可正常連線＆`TARGET_HOST` 是否正確。 |
+| 手機版仍顯示桌面 UI | 清除瀏覽器快取或檢查是否覆寫到 `Cache-Control`。 |
+| 下載檔案出現錯誤 | 目前以文字/HTML 優化為主，若遇到特殊 MIME 類型請回報 Issue。 |
 
-歡迎提交 Issue 和 Pull Request 來改善這個專案！
+---
 
-## 授權條款
+## 貢獻
 
-請參閱 LICENSE 文件。
+歡迎提出 Issue、Pull Request 或建議！
+
+---
+
+## 授權 License
+
+本專案採用 **MIT License**，詳見 [LICENSE](LICENSE)。
