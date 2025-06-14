@@ -11,7 +11,7 @@ center {
 }
 
 .schoolLogo {
-    height: 60px !important;
+    height: 100px !important;
     z-index: 1000 !important;
     background: none !important;
 }
@@ -60,8 +60,11 @@ center {
 
 @media (max-width: 768px) {
     /* 隱藏校徽 */
-    .schoolLogo {
-        display: none !important;
+    .schoolLogo > img {
+        margin-top: 45px !important;
+        margin-left: 310px !important;
+        height: auto !important;
+        width: calc(30dvw) !important;
     }
     
     /* 原始表格保持，但調整排版 */

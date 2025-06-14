@@ -509,28 +509,6 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	html = strings.ReplaceAll(html, `top.location='https://my.utaipei.edu.tw`, `top.location='`+proxyHost)
 	html = strings.ReplaceAll(html, `parent.location='https://my.utaipei.edu.tw`, `parent.location='`+proxyHost)
 
-	// 處理 shcourse 的情況，避免路徑錯誤疊加
-	html = strings.ReplaceAll(html, proxyHost+"/shcourse/utaipei", proxyHost+"/utaipei")
-
-	// JS 重定向 (包含 shcourse)
-	html = strings.ReplaceAll(html, `window.location.href="https://shcourse.utaipei.edu.tw`, `window.location.href="`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `window.location="https://shcourse.utaipei.edu.tw`, `window.location="`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `location.href="https://shcourse.utaipei.edu.tw`, `location.href="`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `location="https://shcourse.utaipei.edu.tw`, `location="`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `document.location="https://shcourse.utaipei.edu.tw`, `document.location="`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `document.location.href="https://shcourse.utaipei.edu.tw`, `document.location.href="`+proxyHost+"/shcourse")
-
-	// 單引號版本
-	html = strings.ReplaceAll(html, `window.location.href='https://shcourse.utaipei.edu.tw`, `window.location.href='`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `window.location='https://shcourse.utaipei.edu.tw`, `window.location='`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `location.href='https://shcourse.utaipei.edu.tw`, `location.href='`+proxyHost+"/shcourse")
-	html = strings.ReplaceAll(html, `location='https://shcourse.utaipei.edu.tw`, `location='`+proxyHost+"/shcourse")
-
-	// meta refresh 針對 shcourse
-	html = regexp.MustCompile(`<meta[^>]*http-equiv="refresh"[^>]*content="[^"]*url=https://shcourse\.utaipei\.edu\.tw([^"]*)"[^>]*>`).ReplaceAllStringFunc(html, func(match string) string {
-		return strings.ReplaceAll(match, "https://shcourse.utaipei.edu.tw", proxyHost+"/shcourse")
-	})
-
 	return html
 }
 
@@ -945,12 +923,8 @@ func main() {
 	// 創建 myUT 代理
 	myUTProxy := NewProxyServer("https://my.utaipei.edu.tw", publicHost, jar)
 
-	// 創建 shcourse 代理
-	shcourseProxy := NewProxyServer("https://shcourse.utaipei.edu.tw", publicHost, jar)
-
 	log.Printf("啟動 gin 代理伺服器於端口 %s", port)
 	log.Printf("主要目標主機: %s", myUTProxy.targetHost)
-	log.Printf("課程系統目標主機: %s", shcourseProxy.targetHost)
 
 	router := gin.Default()
 
@@ -1013,15 +987,6 @@ func main() {
 
 	// utaipei 路徑下的所有請求交給 myUT proxy
 	router.Any("/utaipei/*proxyPath", myUTProxy.ProxyHandler)
-
-	// shcourse 路徑下的所有請求交給 shcourse proxy
-	router.Any("/shcourse/*proxyPath", func(c *gin.Context) {
-		// 將路徑前綴移除，以便正確代理
-		originalPath := c.Request.URL.Path
-		c.Request.URL.Path = strings.TrimPrefix(originalPath, "/shcourse")
-		log.Printf("shcourse 代理: %s -> %s", originalPath, c.Request.URL.Path)
-		shcourseProxy.ProxyHandler(c)
-	})
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("啟動伺服器失敗: %v", err)
