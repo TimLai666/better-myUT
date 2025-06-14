@@ -177,7 +177,7 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			if lowerKey == "cookie" {
 				for _, value := range values {
 					// 記錄原始cookie
-					log.Printf("原始Cookie: %s", value)
+					log.Printf("🍪 轉發Cookie: %s", value)
 					proxyReq.Header.Add(key, value)
 				}
 				continue
@@ -199,14 +199,63 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			proxyReq.Header.Set("Referer", referer)
 		}
 
-		// 確保User-Agent正確傳遞
-		if proxyReq.Header.Get("User-Agent") == "" && r.Header.Get("User-Agent") != "" {
-			proxyReq.Header.Set("User-Agent", r.Header.Get("User-Agent"))
+		// 🔐 一律確保所有請求都有完整的認證和瀏覽器headers
+
+		// 確保User-Agent（如果沒有則設置預設值）
+		if proxyReq.Header.Get("User-Agent") == "" {
+			if r.Header.Get("User-Agent") != "" {
+				proxyReq.Header.Set("User-Agent", r.Header.Get("User-Agent"))
+			} else {
+				// 設置預設的瀏覽器User-Agent
+				proxyReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+			}
 		}
 
-		// 對於Ajax請求，確保必要的headers
+		// 確保Accept header（根據請求類型設置）
+		if proxyReq.Header.Get("Accept") == "" {
+			if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
+				// Ajax請求
+				proxyReq.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
+			} else {
+				// 一般HTML請求
+				proxyReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+			}
+		}
+
+		// 確保Accept-Language
+		if proxyReq.Header.Get("Accept-Language") == "" {
+			proxyReq.Header.Set("Accept-Language", "zh-TW,zh;q=0.9,en;q=0.8")
+		}
+
+		// 確保Accept-Encoding
+		if proxyReq.Header.Get("Accept-Encoding") == "" {
+			proxyReq.Header.Set("Accept-Encoding", "gzip, deflate")
+		}
+
+		// 一律設置防快取headers（確保認證狀態即時更新）
+		proxyReq.Header.Set("Cache-Control", "no-cache")
+		proxyReq.Header.Set("Pragma", "no-cache")
+
+		// 確保Connection header
+		if proxyReq.Header.Get("Connection") == "" {
+			proxyReq.Header.Set("Connection", "keep-alive")
+		}
+
+		// 確保Upgrade-Insecure-Requests
+		if proxyReq.Header.Get("Upgrade-Insecure-Requests") == "" && r.Method == "GET" {
+			proxyReq.Header.Set("Upgrade-Insecure-Requests", "1")
+		}
+
+		// 對於Ajax請求，確保X-Requested-With
 		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
 			proxyReq.Header.Set("X-Requested-With", "XMLHttpRequest")
+		}
+
+		// 記錄特殊認證檢查請求
+		if strings.Contains(strings.ToLower(currentURL), "perchk.jsp") ||
+			strings.Contains(strings.ToLower(currentURL), "check") ||
+			strings.Contains(strings.ToLower(currentURL), "auth") {
+			log.Printf("🔐 認證檢查請求: %s", currentURL)
 		}
 
 		// 設置Origin header（對於CORS很重要）
@@ -592,9 +641,11 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 		log.Printf("跳過二進制文件的HTML優化")
 	}
 
-	// 特別記錄API回應內容（用於除錯登入狀態）
-	if strings.Contains(reqPath, "favorite_api.jsp") || strings.Contains(reqPath, "api") {
-		log.Printf("API回應內容 (%s): %s", c.Request.URL.Path, string(body[:min(500, len(body))]))
+	// 特別記錄API和權限檢查回應內容（用於除錯登入狀態）
+	if strings.Contains(reqPath, "favorite_api.jsp") || strings.Contains(reqPath, "api") ||
+		strings.Contains(reqPath, "perchk.jsp") || strings.Contains(reqPath, "check") {
+		log.Printf("🔐 認證相關回應 (%s): 狀態=%d, 內容=%s",
+			c.Request.URL.Path, resp.StatusCode, string(body[:min(500, len(body))]))
 	}
 
 	// 確保後續邏輯知道是否修改過 HTML
@@ -654,8 +705,9 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma")
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Set-Cookie")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Cookie, Referer")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Set-Cookie, Location")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400") // 預檢請求快取1天
 	}
 
 	// 處理OPTIONS預檢請求
@@ -687,24 +739,47 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 	}
 
 	proxyDomain := proxyURL.Hostname()
+
+	// 保留原始cookie值用於比較
+	originalCookie := cookieValue
+
+	// 對於本地測試，採用更保守的處理方式
 	if proxyDomain == "127.0.0.1" || proxyDomain == "localhost" {
-		// 對於本地測試，移除domain限制
-		modifiedCookie := regexp.MustCompile(`(?i);\s*domain=[^;]*`).ReplaceAllString(cookieValue, "")
-		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+		// 只移除不相容的domain設定，保留其他屬性
+		modifiedCookie := cookieValue
+
+		// 檢查是否有domain設定需要移除
+		if strings.Contains(strings.ToLower(cookieValue), "domain=") {
+			// 只移除與目標網站相關的domain，保留認證相關的設定
+			domainRegex := regexp.MustCompile(`(?i);\s*domain=([^;]*\.)?utaipei\.edu\.tw`)
+			modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "")
+			log.Printf("🔧 移除domain限制: %s -> %s", cookieValue, modifiedCookie)
+		}
+
+		// 對於HTTP代理，移除secure屬性
+		if !strings.HasPrefix(p.publicHost, "https://") {
+			modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+		}
+
+		// 確保session cookie有正確的path
+		if !strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+			modifiedCookie += "; Path=/"
+		}
+
+		log.Printf("Cookie轉換 (localhost): %s -> %s", originalCookie, modifiedCookie)
 		return modifiedCookie
 	}
 
-	// 移除原始domain並設置為代理domain
-	modifiedCookie := regexp.MustCompile(`(?i);\s*domain=[^;]*`).ReplaceAllString(cookieValue, "")
+	// 對於生產環境的處理
+	modifiedCookie := cookieValue
+
+	// 替換domain為代理domain
+	domainRegex := regexp.MustCompile(`(?i);\s*domain=[^;]*`)
+	modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "; Domain="+proxyDomain)
 
 	// 如果是HTTPS代理就保留secure，否則移除
 	if !strings.HasPrefix(p.publicHost, "https://") {
 		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
-	}
-
-	// 添加代理域名（如果不是localhost）
-	if proxyDomain != "127.0.0.1" && proxyDomain != "localhost" {
-		modifiedCookie += "; Domain=" + proxyDomain
 	}
 
 	// 確保cookie對所有路徑有效
@@ -712,7 +787,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 		modifiedCookie += "; Path=/"
 	}
 
-	log.Printf("Cookie轉換: %s -> %s", cookieValue, modifiedCookie)
+	log.Printf("Cookie轉換 (production): %s -> %s", originalCookie, modifiedCookie)
 	return modifiedCookie
 }
 
@@ -737,12 +812,38 @@ func main() {
 
 	router := gin.Default()
 
-	// 添加cookie處理中間件
+	// 添加全面的認證和調試中間件
 	router.Use(func(c *gin.Context) {
-		// 在所有請求處理前記錄cookie資訊
-		if cookies := c.Request.Header.Get("Cookie"); cookies != "" {
-			log.Printf("收到客戶端Cookie: %s", cookies)
+		// 記錄所有請求的認證狀態
+		cookies := c.Request.Header.Get("Cookie")
+		userAgent := c.Request.Header.Get("User-Agent")
+		referer := c.Request.Header.Get("Referer")
+
+		// 為所有請求記錄基本認證信息
+		log.Printf("📨 請求: %s %s | Cookie: %s | UA: %s",
+			c.Request.Method,
+			c.Request.URL.Path,
+			func() string {
+				if cookies != "" {
+					return "有(" + fmt.Sprintf("%d字元", len(cookies)) + ")"
+				}
+				return "無"
+			}(),
+			func() string {
+				if userAgent != "" {
+					return userAgent[:min(50, len(userAgent))] + "..."
+				}
+				return "無"
+			}())
+
+		// 特別記錄權限檢查請求的完整cookie
+		if strings.Contains(c.Request.URL.Path, "perchk.jsp") ||
+			strings.Contains(c.Request.URL.Path, "check") {
+			log.Printf("🚨 權限檢查: %s", c.Request.URL.String())
+			log.Printf("🍪 完整Cookie: %s", cookies)
+			log.Printf("🔗 Referer: %s", referer)
 		}
+
 		c.Next()
 	})
 

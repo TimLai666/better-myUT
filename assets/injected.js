@@ -30,4 +30,3 @@
   updateSwitch();
   setInterval(updateSwitch, 300);
 })();
-
