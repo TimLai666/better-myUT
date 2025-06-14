@@ -25,7 +25,7 @@ window.addEventListener('load', () => {
         }
     }
 
-    insertFooter(main);
+    setInterval(insertFooter(main), 200);
 
     // 添加側邊欄搜尋功能
     setTimeout(initSearch, 1000);
@@ -33,6 +33,10 @@ window.addEventListener('load', () => {
 
 
 function insertFooter(frame) {
+    if (frame.document.getElementById('customFooter')) {
+        console.log('✅ Footer 已存在，跳過插入');
+        return;
+    }
     // 為頁面 body 添加底部間距，避免內容被 footer 覆蓋
     frame.document.body.style.paddingBottom = '130px';
 
