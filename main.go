@@ -859,52 +859,32 @@ func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
 	// 保留原始cookie值用於比較
 	originalCookie := cookieValue
 
-	// 對於本地測試，採用更保守的處理方式
+	// 對於本地測試，我們不創建 utaipei.edu.tw domain 的 cookie
+	// 因為本地無法存取該域名
 	if proxyDomain == "127.0.0.1" || proxyDomain == "localhost" {
-		// 只移除不相容的domain設定，保留其他屬性
-		modifiedCookie := cookieValue
-
-		// 檢查是否有domain設定需要移除
-		if strings.Contains(strings.ToLower(cookieValue), "domain=") {
-			// 只移除與目標網站相關的domain，保留認證相關的設定
-			domainRegex := regexp.MustCompile(`(?i);\s*domain=([^;]*\.)?utaipei\.edu\.tw`)
-			modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "")
-			log.Printf("🔧 移除domain限制: %s -> %s", cookieValue, modifiedCookie)
-		}
-
-		// 對於HTTP代理，移除secure屬性
-		if !strings.HasPrefix(p.publicHost, "https://") {
-			modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
-		}
-
-		// 🔧 重要修正：將所有 Path 都設為根路徑，確保 Cookie 在 /utaipei 和 /shcourse 間共享
-		if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
-			// 替換現有的 Path 設定
-			pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
-			modifiedCookie = pathRegex.ReplaceAllString(modifiedCookie, "; Path=/")
-			log.Printf("🔧 修正Cookie路徑為根路徑: %s", modifiedCookie)
-		} else {
-			// 如果沒有 Path，添加根路徑
-			modifiedCookie += "; Path=/"
-		}
-
-		log.Printf("Cookie轉換 (localhost): %s -> %s", originalCookie, modifiedCookie)
-		return modifiedCookie
+		log.Printf("🔧 本地環境跳過創建 utaipei.edu.tw cookie")
+		return ""
 	}
 
-	// 對於生產環境的處理
+	// 🎯 對於生產環境，創建一個可以被 my.utaipei.edu.tw 讀取的 cookie
 	modifiedCookie := cookieValue
 
-	// 替換domain為代理domain
+	// 設置 domain 為 .utaipei.edu.tw，讓所有 utaipei.edu.tw 的子域名都能讀取
 	domainRegex := regexp.MustCompile(`(?i);\s*domain=[^;]*`)
-	modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "; Domain="+proxyDomain)
-
-	// 如果是HTTPS代理就保留secure，否則移除
-	if !strings.HasPrefix(p.publicHost, "https://") {
-		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+	if domainRegex.MatchString(modifiedCookie) {
+		// 替換現有的 domain 設定
+		modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "; Domain=.utaipei.edu.tw")
+	} else {
+		// 如果沒有 domain，添加 utaipei.edu.tw domain
+		modifiedCookie += "; Domain=.utaipei.edu.tw"
 	}
 
-	// 🔧 生產環境也要確保所有 Cookie 都使用根路徑
+	// 確保使用 HTTPS（因為 my.utaipei.edu.tw 使用 HTTPS）
+	if !strings.Contains(strings.ToLower(modifiedCookie), "secure") {
+		modifiedCookie += "; Secure"
+	}
+
+	// 🔧 重要：將所有 Path 都設為根路徑，確保在整個網站都可以使用
 	if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
 		// 替換現有的 Path 設定
 		pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
@@ -914,7 +894,12 @@ func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
 		modifiedCookie += "; Path=/"
 	}
 
-	log.Printf("Cookie轉換 (production): %s -> %s", originalCookie, modifiedCookie)
+	// 添加 SameSite 屬性以確保跨站請求時 cookie 可以被發送
+	if !strings.Contains(strings.ToLower(modifiedCookie), "samesite") {
+		modifiedCookie += "; SameSite=None"
+	}
+
+	log.Printf("🌐 創建 utaipei.edu.tw cookie: %s -> %s", originalCookie, modifiedCookie)
 	return modifiedCookie
 }
 
