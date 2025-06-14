@@ -1187,7 +1187,31 @@ func main() {
 		c.Next()
 	})
 
-	router.Static("/assets/img", "./assets/img") // 靜態資源路由
+	// 圖片檔案路由 (使用 embed)
+	router.GET("/assets/img/:filename", func(c *gin.Context) {
+		filename := c.Param("filename")
+		data, err := assets.ImgFS.ReadFile("img/" + filename)
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		// 根據檔案副檔名設定 Content-Type
+		contentType := "application/octet-stream"
+		if strings.HasSuffix(filename, ".png") {
+			contentType = "image/png"
+		} else if strings.HasSuffix(filename, ".jpg") || strings.HasSuffix(filename, ".jpeg") {
+			contentType = "image/jpeg"
+		} else if strings.HasSuffix(filename, ".gif") {
+			contentType = "image/gif"
+		} else if strings.HasSuffix(filename, ".svg") {
+			contentType = "image/svg+xml"
+		}
+
+		c.Header("Content-Type", contentType)
+		c.Header("Cache-Control", "public, max-age=31536000") // 1年快取
+		c.Data(http.StatusOK, contentType, data)
+	})
 
 	// 字型檔案路由
 	router.GET("/font/TaipeiSansTCBeta-Light.ttf", func(c *gin.Context) {

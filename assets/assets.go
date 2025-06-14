@@ -1,6 +1,6 @@
 package assets
 
-import _ "embed"
+import "embed"
 
 //go:embed fonts.css
 var FontsCSS string
@@ -37,6 +37,9 @@ var TaipeiSansRegular []byte
 
 //go:embed font/TaipeiSansTCBeta-Bold.ttf
 var TaipeiSansBold []byte
+
+//go:embed img/*
+var ImgFS embed.FS
 
 // CombinedCSS 將所有 CSS 模組組合成一個字串
 var CombinedCSS = FontsCSS + "\n\n" + BaseCSS + "\n\n" + ButtonsCSS + "\n\n" + FormsCSS + "\n\n" + SidebarCSS + "\n\n" + ModalCSS + "\n\n" + HeaderCSS + "\n\n" + TablesCSS
