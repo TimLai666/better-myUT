@@ -31,39 +31,18 @@ type ProxyServer struct {
 	publicHost string // 部署後對外的代理伺服器網址
 }
 
-func NewProxyServer() *ProxyServer {
-	// 創建一個更寬鬆的cookie jar設置
-	jar, err := cookiejar.New(&cookiejar.Options{
-		PublicSuffixList: nil, // 允許更寬鬆的cookie處理
-	})
-	if err != nil {
-		log.Printf("警告：創建cookie jar失敗: %v", err)
-		jar, _ = cookiejar.New(nil)
-	}
-
+func NewProxyServer(targetHost, publicHost string, jar http.CookieJar) *ProxyServer {
 	client := &http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
 	}
 
-	// 從環境變數讀取目標與公開主機
-	target := os.Getenv("TARGET_HOST")
-	public := os.Getenv("PROXY_HOST")
-
-	// 預設值
-	if target == "" {
-		target = "https://my.utaipei.edu.tw"
-	}
-	if public == "" {
-		public = "http://127.0.0.1:8080"
-	}
-
-	log.Printf("代理伺服器設置 - 目標: %s, 公開: %s", target, public)
+	log.Printf("代理伺服器設置 - 目標: %s, 公開: %s", targetHost, publicHost)
 
 	return &ProxyServer{
 		client:     client,
-		targetHost: target,
-		publicHost: public,
+		targetHost: targetHost,
+		publicHost: publicHost,
 	}
 }
 
@@ -121,6 +100,8 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 返回 200 OK 而不是重定向狀態碼
 	w.WriteHeader(http.StatusOK)
+	// 移除可能殘留的 Location header
+	w.Header().Del("Location")
 	w.Write(finalBody)
 
 	log.Printf("完成代理請求，返回優化內容")
@@ -290,6 +271,8 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			return nil, nil, fmt.Errorf("讀取回應失敗: %v", err)
 		}
 
+		log.Printf("🔄 收到回應: 狀態碼=%d, Content-Length=%d", resp.StatusCode, len(body))
+
 		// 檢查是否是重定向
 		if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 			location := resp.Header.Get("Location")
@@ -301,31 +284,32 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 
 			log.Printf("檢測到重定向: %d -> %s", resp.StatusCode, location)
 
-			// 處理相對 URL
-			if strings.HasPrefix(location, "/") {
-				currentURL = p.targetHost + location
-			} else if strings.HasPrefix(location, "http") {
-				// 若導向 localhost，改寫成目標主機路徑
-				if strings.HasPrefix(location, "http://localhost") || strings.HasPrefix(location, "https://localhost") {
-					if parsed, err := url.Parse(location); err == nil {
-						currentURL = p.targetHost + parsed.Path
-						if parsed.RawQuery != "" {
-							currentURL += "?" + parsed.RawQuery
-						}
-					} else {
-						currentURL = p.targetHost
-					}
-				} else {
-					currentURL = location
-				}
-			} else {
-				// 相對路徑，需要基於當前 URL 構建
-				baseURL := currentURL
-				if lastSlash := strings.LastIndex(baseURL, "/"); lastSlash > 8 { // 8 是 "https://" 的長度
-					baseURL = baseURL[:lastSlash+1]
-				}
-				currentURL = baseURL + location
+			// 使用 net/url 來更穩健地處理重定向 URL
+			base, err := url.Parse(currentURL)
+			if err != nil {
+				log.Printf("❌ 無法解析當前 URL: %v", err)
+				// 不要返回重定向回應，而是繼續嘗試或返回錯誤
+				resp.Body.Close()
+				continue
 			}
+
+			newURL, err := base.Parse(location)
+			if err != nil {
+				log.Printf("❌ 無法解析重定向位置: %v", err)
+				// 不要返回重定向回應，而是繼續嘗試或返回錯誤
+				resp.Body.Close()
+				continue
+			}
+
+			// 檢查並處理導向 localhost 的情況
+			if newURL.Hostname() == "localhost" {
+				// 將其重寫為指向目標主機
+				newURL.Host = base.Host
+				log.Printf("重寫 localhost 重定向 -> %s", newURL.String())
+			}
+
+			currentURL = newURL.String()
+			log.Printf("✅ 重定向到: %s", currentURL)
 
 			resp.Body.Close()
 
@@ -333,15 +317,18 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			if resp.StatusCode != 307 && resp.StatusCode != 308 {
 				r.Method = "GET"
 				bodyBytes = nil // 清空 body
+				log.Printf("🔄 重定向後改為 GET 請求")
 			}
 
 			continue
 		}
 
 		// 不是重定向，返回結果
+		log.Printf("✅ 最終回應: 狀態碼=%d, Content-Length=%d", resp.StatusCode, len(body))
 		return resp, body, nil
 	}
 
+	log.Printf("❌ 超過最大重定向次數 (%d)", maxRedirects)
 	return nil, nil, fmt.Errorf("超過最大重定向次數 (%d)", maxRedirects)
 }
 
@@ -476,6 +463,8 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	// 替換絕對 URL
 	html = strings.ReplaceAll(html, "https://my.utaipei.edu.tw", proxyHost)
 	html = strings.ReplaceAll(html, "http://my.utaipei.edu.tw", proxyHost)
+	html = strings.ReplaceAll(html, "https://shcourse.utaipei.edu.tw", proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, "http://shcourse.utaipei.edu.tw", proxyHost+"/shcourse")
 
 	// 將可能寫成 localhost 的 URL 一併導向代理（避免撈取本機 80 port）
 	html = strings.ReplaceAll(html, "https://localhost", proxyHost+"/utaipei")
@@ -519,6 +508,29 @@ func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	html = strings.ReplaceAll(html, `parent.location="https://my.utaipei.edu.tw`, `parent.location="`+proxyHost)
 	html = strings.ReplaceAll(html, `top.location='https://my.utaipei.edu.tw`, `top.location='`+proxyHost)
 	html = strings.ReplaceAll(html, `parent.location='https://my.utaipei.edu.tw`, `parent.location='`+proxyHost)
+
+	// 處理 shcourse 的情況，避免路徑錯誤疊加
+	html = strings.ReplaceAll(html, proxyHost+"/shcourse/utaipei", proxyHost+"/utaipei")
+
+	// JS 重定向 (包含 shcourse)
+	html = strings.ReplaceAll(html, `window.location.href="https://shcourse.utaipei.edu.tw`, `window.location.href="`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `window.location="https://shcourse.utaipei.edu.tw`, `window.location="`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `location.href="https://shcourse.utaipei.edu.tw`, `location.href="`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `location="https://shcourse.utaipei.edu.tw`, `location="`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `document.location="https://shcourse.utaipei.edu.tw`, `document.location="`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `document.location.href="https://shcourse.utaipei.edu.tw`, `document.location.href="`+proxyHost+"/shcourse")
+
+	// 單引號版本
+	html = strings.ReplaceAll(html, `window.location.href='https://shcourse.utaipei.edu.tw`, `window.location.href='`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `window.location='https://shcourse.utaipei.edu.tw`, `window.location='`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `location.href='https://shcourse.utaipei.edu.tw`, `location.href='`+proxyHost+"/shcourse")
+	html = strings.ReplaceAll(html, `location='https://shcourse.utaipei.edu.tw`, `location='`+proxyHost+"/shcourse")
+
+	// meta refresh 針對 shcourse
+	html = regexp.MustCompile(`<meta[^>]*http-equiv="refresh"[^>]*content="[^"]*url=https://shcourse\.utaipei\.edu\.tw([^"]*)"[^>]*>`).ReplaceAllStringFunc(html, func(match string) string {
+		return strings.ReplaceAll(match, "https://shcourse.utaipei.edu.tw", proxyHost+"/shcourse")
+	})
+
 	return html
 }
 
@@ -626,6 +638,20 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 		log.Printf("檢測到二進制/靜態文件: %s (Content-Type: %s)", c.Request.URL.Path, contentType)
 	}
 
+	// 如果是 JavaScript 或 CSS，視為可文字處理文件
+	if strings.Contains(lowerContentType, "javascript") || strings.Contains(lowerContentType, "css") || strings.Contains(lowerContentType, "json") {
+		isBinaryFile = false
+	}
+
+	// 若為可文字處理的 JS/CSS/JSON，進行 URL 置換
+	if !isBinaryFile && (strings.Contains(lowerContentType, "javascript") || strings.Contains(lowerContentType, "css") || strings.Contains(lowerContentType, "json")) {
+		bodyStr := p.replaceTargetURLs(string(body), "")
+		body = []byte(bodyStr)
+		// 更新 Content-Length
+		c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
+		log.Printf("已對文本內容進行 URL 置換 (%s)", contentType)
+	}
+
 	// 排除清單：不注入 favorite.jsp、API路徑和二進制文件
 	reqPath := strings.ToLower(c.Request.URL.Path)
 	shouldInject := isHTML && !isBinaryFile &&
@@ -664,6 +690,12 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 				// 將cookie中的domain從原站改為代理站
 				modifiedCookie := p.transformSetCookie(value)
 				c.Writer.Header().Add(key, modifiedCookie)
+
+				// 另外複製一份，使其可用於 *.utaipei.edu.tw 以便真正網域也能使用
+				duplicate := p.createUtaipeiCookie(value)
+				if duplicate != "" {
+					c.Writer.Header().Add(key, duplicate)
+				}
 			}
 			continue
 		}
@@ -721,8 +753,20 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 		c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(body)))
 	}
 
-	// 直接沿用遠端狀態碼
-	c.Status(resp.StatusCode)
+	// 決定最終的狀態碼
+	finalStatusCode := resp.StatusCode
+	if finalStatusCode >= 300 && finalStatusCode < 400 {
+		// 攔截重定向，強制改寫為 200 OK，避免瀏覽器端跳轉
+		log.Printf("⚠️  偵測到後端重定向 (狀態碼 %d)，強制改寫為 200 OK。", finalStatusCode)
+		finalStatusCode = http.StatusOK
+	}
+
+	// 使用我們決定的狀態碼
+	c.Status(finalStatusCode)
+	if finalStatusCode == http.StatusOK {
+		// 若原回應帶有 Location，移除以避免瀏覽器再次跳轉
+		c.Writer.Header().Del("Location")
+	}
 
 	// 回傳 body
 	c.Writer.Write(body)
@@ -761,8 +805,14 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 			modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
 		}
 
-		// 確保session cookie有正確的path
-		if !strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+		// 🔧 重要修正：將所有 Path 都設為根路徑，確保 Cookie 在 /utaipei 和 /shcourse 間共享
+		if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+			// 替換現有的 Path 設定
+			pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
+			modifiedCookie = pathRegex.ReplaceAllString(modifiedCookie, "; Path=/")
+			log.Printf("🔧 修正Cookie路徑為根路徑: %s", modifiedCookie)
+		} else {
+			// 如果沒有 Path，添加根路徑
 			modifiedCookie += "; Path=/"
 		}
 
@@ -782,8 +832,85 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
 	}
 
-	// 確保cookie對所有路徑有效
-	if !strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+	// 🔧 生產環境也要確保所有 Cookie 都使用根路徑
+	if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+		// 替換現有的 Path 設定
+		pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
+		modifiedCookie = pathRegex.ReplaceAllString(modifiedCookie, "; Path=/")
+	} else {
+		// 如果沒有 Path，添加根路徑
+		modifiedCookie += "; Path=/"
+	}
+
+	log.Printf("Cookie轉換 (production): %s -> %s", originalCookie, modifiedCookie)
+	return modifiedCookie
+}
+
+func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
+	// 解析代理主機的域名
+	proxyURL, err := url.Parse(p.publicHost)
+	if err != nil {
+		log.Printf("警告：無法解析代理主機URL: %v", err)
+		return ""
+	}
+
+	proxyDomain := proxyURL.Hostname()
+
+	// 保留原始cookie值用於比較
+	originalCookie := cookieValue
+
+	// 對於本地測試，採用更保守的處理方式
+	if proxyDomain == "127.0.0.1" || proxyDomain == "localhost" {
+		// 只移除不相容的domain設定，保留其他屬性
+		modifiedCookie := cookieValue
+
+		// 檢查是否有domain設定需要移除
+		if strings.Contains(strings.ToLower(cookieValue), "domain=") {
+			// 只移除與目標網站相關的domain，保留認證相關的設定
+			domainRegex := regexp.MustCompile(`(?i);\s*domain=([^;]*\.)?utaipei\.edu\.tw`)
+			modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "")
+			log.Printf("🔧 移除domain限制: %s -> %s", cookieValue, modifiedCookie)
+		}
+
+		// 對於HTTP代理，移除secure屬性
+		if !strings.HasPrefix(p.publicHost, "https://") {
+			modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+		}
+
+		// 🔧 重要修正：將所有 Path 都設為根路徑，確保 Cookie 在 /utaipei 和 /shcourse 間共享
+		if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+			// 替換現有的 Path 設定
+			pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
+			modifiedCookie = pathRegex.ReplaceAllString(modifiedCookie, "; Path=/")
+			log.Printf("🔧 修正Cookie路徑為根路徑: %s", modifiedCookie)
+		} else {
+			// 如果沒有 Path，添加根路徑
+			modifiedCookie += "; Path=/"
+		}
+
+		log.Printf("Cookie轉換 (localhost): %s -> %s", originalCookie, modifiedCookie)
+		return modifiedCookie
+	}
+
+	// 對於生產環境的處理
+	modifiedCookie := cookieValue
+
+	// 替換domain為代理domain
+	domainRegex := regexp.MustCompile(`(?i);\s*domain=[^;]*`)
+	modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "; Domain="+proxyDomain)
+
+	// 如果是HTTPS代理就保留secure，否則移除
+	if !strings.HasPrefix(p.publicHost, "https://") {
+		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
+	}
+
+	// 🔧 生產環境也要確保所有 Cookie 都使用根路徑
+	if strings.Contains(strings.ToLower(modifiedCookie), "path=") {
+		// 替換現有的 Path 設定
+		pathRegex := regexp.MustCompile(`(?i);\s*path=[^;]*`)
+		modifiedCookie = pathRegex.ReplaceAllString(modifiedCookie, "; Path=/")
+	} else {
+		// 如果沒有 Path，添加根路徑
 		modifiedCookie += "; Path=/"
 	}
 
@@ -802,13 +929,28 @@ func main() {
 		port = "8080"
 	}
 
-	proxy := NewProxyServer()
-	if proxy.targetHost == "" {
-		proxy.targetHost = "https://my.utaipei.edu.tw"
+	publicHost := os.Getenv("PROXY_HOST")
+	if publicHost == "" {
+		publicHost = "http://127.0.0.1:8080"
 	}
 
+	// 創建共享的 cookie jar
+	jar, err := cookiejar.New(&cookiejar.Options{
+		PublicSuffixList: nil, // 允許更寬鬆的cookie處理
+	})
+	if err != nil {
+		log.Fatalf("創建共享 cookie jar 失敗: %v", err)
+	}
+
+	// 創建 myUT 代理
+	myUTProxy := NewProxyServer("https://my.utaipei.edu.tw", publicHost, jar)
+
+	// 創建 shcourse 代理
+	shcourseProxy := NewProxyServer("https://shcourse.utaipei.edu.tw", publicHost, jar)
+
 	log.Printf("啟動 gin 代理伺服器於端口 %s", port)
-	log.Printf("目標主機: %s", proxy.targetHost)
+	log.Printf("主要目標主機: %s", myUTProxy.targetHost)
+	log.Printf("課程系統目標主機: %s", shcourseProxy.targetHost)
 
 	router := gin.Default()
 
@@ -820,7 +962,7 @@ func main() {
 		referer := c.Request.Header.Get("Referer")
 
 		// 為所有請求記錄基本認證信息
-		log.Printf("📨 請求: %s %s | Cookie: %s | UA: %s",
+		log.Printf("收到請求: %s %s | Cookie: %s | UA: %s",
 			c.Request.Method,
 			c.Request.URL.Path,
 			func() string {
@@ -867,10 +1009,19 @@ func main() {
 	})
 
 	// 根路徑處理
-	router.GET("/", proxy.ProxyHandler)
+	router.GET("/", myUTProxy.ProxyHandler)
 
-	// utaipei 路徑下的所有請求交給 proxy
-	router.Any("/utaipei/*proxyPath", proxy.ProxyHandler)
+	// utaipei 路徑下的所有請求交給 myUT proxy
+	router.Any("/utaipei/*proxyPath", myUTProxy.ProxyHandler)
+
+	// shcourse 路徑下的所有請求交給 shcourse proxy
+	router.Any("/shcourse/*proxyPath", func(c *gin.Context) {
+		// 將路徑前綴移除，以便正確代理
+		originalPath := c.Request.URL.Path
+		c.Request.URL.Path = strings.TrimPrefix(originalPath, "/shcourse")
+		log.Printf("shcourse 代理: %s -> %s", originalPath, c.Request.URL.Path)
+		shcourseProxy.ProxyHandler(c)
+	})
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("啟動伺服器失敗: %v", err)
