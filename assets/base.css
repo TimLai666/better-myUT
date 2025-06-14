@@ -128,11 +128,7 @@ center {
     backdrop-filter: blur(25px) saturate(200%) !important;
     border: 1px solid rgba(59, 130, 246, 0.7) !important;
     border-radius: 20px !important;
-    box-shadow: 
-        0 20px 40px -12px rgba(29, 78, 216, 0.6),
-        0 8px 32px rgba(37, 99, 235, 0.4),
-        inset 0 1px 0 rgba(96, 165, 250, 0.8),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.4) !important;
+    box-shadow: none !important;
     padding: 45px 35px !important;
     width: 300px !important;
     left: 50% !important;
@@ -150,11 +146,7 @@ center {
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    background: linear-gradient(135deg, 
-        rgba(96, 165, 250, 0.4) 0%, 
-        rgba(37, 99, 235, 0.3) 30%,
-        rgba(59, 130, 246, 0.35) 70%,
-        rgba(29, 78, 216, 0.25) 100%) !important;
+    background: rgba(59, 130, 246, 0.1) !important;
     border-radius: 20px !important;
     pointer-events: none !important;
     z-index: -1 !important;
