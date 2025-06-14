@@ -59,7 +59,7 @@ center {
 }
 
 @media (max-width: 768px) {
-    /* 隱藏校徽 */
+    /* 縮小校徽 */
     .schoolLogo > img {
         margin-top: 45px !important;
         margin-left: 310px !important;
