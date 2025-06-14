@@ -181,7 +181,25 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 				for _, value := range values {
 					// 記錄原始cookie
 					log.Printf("🍪 轉發Cookie: %s", value)
-					proxyReq.Header.Add(key, value)
+
+					// 🔧 針對 JSP 頁面的特殊 Cookie 處理
+					if strings.Contains(strings.ToLower(currentURL), ".jsp") {
+						// 確保 Cookie 值正確編碼和格式化
+						cleanValue := strings.TrimSpace(value)
+						if cleanValue != "" {
+							proxyReq.Header.Add(key, cleanValue)
+
+							// 對於認證相關的JSP頁面，額外檢查 Cookie 完整性
+							if strings.Contains(strings.ToLower(currentURL), "uaa") ||
+								strings.Contains(strings.ToLower(currentURL), "auth") {
+								log.Printf("🔐 認證JSP頁面Cookie檢查: %s", cleanValue[:min(100, len(cleanValue))])
+								log.Printf("🏫 JSP頁面偽裝學校身份 - Host: %s, Origin: %s, Referer: %s",
+									proxyReq.Host, proxyReq.Header.Get("Origin"), proxyReq.Header.Get("Referer"))
+							}
+						}
+					} else {
+						proxyReq.Header.Add(key, value)
+					}
 				}
 				continue
 			}
@@ -191,15 +209,34 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			}
 		}
 
-		// 設置正確的 Host header
+		// 🔧 設置正確的 Host header - 確保看起來像從學校官方網站訪問
 		proxyReq.Host = proxyReq.URL.Host
 
-		// 確保重要的認證相關headers正確設置
-		if proxyReq.Header.Get("Referer") == "" && r.Header.Get("Referer") != "" {
+		// 對於認證相關請求，記錄 Host 設置用於除錯
+		if strings.Contains(strings.ToLower(currentURL), "uaa") ||
+			strings.Contains(strings.ToLower(currentURL), "auth") ||
+			strings.Contains(strings.ToLower(currentURL), "login") {
+			log.Printf("🏫 認證頁面Host設置: %s", proxyReq.Host)
+		}
+
+		// 🔧 確保重要的認證相關headers正確設置 - 假裝從學校官方網站訪問
+		// 處理 Referer header
+		if r.Header.Get("Referer") != "" {
 			// 將Referer中的代理地址替換為目標地址
 			referer := r.Header.Get("Referer")
 			referer = strings.ReplaceAll(referer, p.publicHost, p.targetHost)
 			proxyReq.Header.Set("Referer", referer)
+		} else {
+			// 如果沒有 Referer，設置正確的學校首頁 Referer
+			proxyReq.Header.Set("Referer", p.targetHost+"/utaipei/index_sky.html")
+		}
+
+		// 🔐 對於認證頁面，強制設置正確的學校首頁作為 Referer
+		if strings.Contains(strings.ToLower(currentURL), "uaa") ||
+			strings.Contains(strings.ToLower(currentURL), "auth") ||
+			strings.Contains(strings.ToLower(currentURL), "login") {
+			proxyReq.Header.Set("Referer", p.targetHost+"/utaipei/index_sky.html")
+			log.Printf("🏫 認證頁面設置學校首頁Referer: %s", p.targetHost+"/utaipei/index_sky.html")
 		}
 
 		// 🔐 一律確保所有請求都有完整的認證和瀏覽器headers
@@ -261,14 +298,22 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 			log.Printf("🔐 認證檢查請求: %s", currentURL)
 		}
 
-		// 設置Origin header（對於CORS很重要）
+		// 🔧 設置Origin header（對於CORS很重要）- 確保來源看起來是學校官方網站
 		if origin := r.Header.Get("Origin"); origin != "" {
 			// 將Origin中的代理地址替換為目標地址
 			origin = strings.ReplaceAll(origin, p.publicHost, p.targetHost)
 			proxyReq.Header.Set("Origin", origin)
-		} else if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
-			// 對於修改性請求，如果沒有Origin則設置一個
+		} else {
+			// 總是設置學校官方網站作為 Origin
 			proxyReq.Header.Set("Origin", p.targetHost)
+		}
+
+		// 🔐 對於認證相關請求，強制設置學校官方網站作為 Origin
+		if strings.Contains(strings.ToLower(currentURL), "uaa") ||
+			strings.Contains(strings.ToLower(currentURL), "auth") ||
+			strings.Contains(strings.ToLower(currentURL), "login") {
+			proxyReq.Header.Set("Origin", p.targetHost)
+			log.Printf("🏫 認證頁面設置學校Origin: %s", p.targetHost)
 		}
 
 		// 創建不跟隨重定向的 client
@@ -674,6 +719,33 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 			c.Request.URL.Path, resp.StatusCode, string(body[:min(500, len(body))]))
 	}
 
+	// 🔧 專門記錄 uaa002 頁面的認證檢查（用於除錯登入狀態問題）
+	if strings.Contains(reqPath, "uaa002") {
+		log.Printf("🚨 UAA002 認證檢查 (%s): 狀態=%d", c.Request.URL.Path, resp.StatusCode)
+
+		// 檢查回應內容是否包含登入相關的錯誤或重定向
+		bodyStr := string(body)
+		if strings.Contains(strings.ToLower(bodyStr), "login") ||
+			strings.Contains(strings.ToLower(bodyStr), "登入") ||
+			strings.Contains(strings.ToLower(bodyStr), "unauthorized") ||
+			strings.Contains(strings.ToLower(bodyStr), "權限不足") ||
+			strings.Contains(strings.ToLower(bodyStr), "please logon from homepage") {
+			log.Printf("⚠️  UAA002 頁面包含登入相關內容: %s", bodyStr[:min(200, len(bodyStr))])
+
+			// 🔧 特別處理 "please logon from homepage" 錯誤
+			if strings.Contains(strings.ToLower(bodyStr), "please logon from homepage") {
+				log.Printf("🚨 檢測到 'please logon from homepage' 錯誤 - 系統要求從首頁登入")
+				log.Printf("💡 建議：請先訪問首頁 /utaipei/index_sky.html 再嘗試訪問此頁面")
+			}
+		}
+
+		// 檢查是否有 JavaScript 重定向
+		if strings.Contains(strings.ToLower(bodyStr), "location.href") ||
+			strings.Contains(strings.ToLower(bodyStr), "window.location") {
+			log.Printf("⚠️  UAA002 頁面包含重定向: %s", bodyStr[:min(300, len(bodyStr))])
+		}
+	}
+
 	// 確保後續邏輯知道是否修改過 HTML
 	isHTML = shouldInject
 
@@ -816,6 +888,37 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 			modifiedCookie += "; Path=/"
 		}
 
+		// 🔧 針對本地環境優化：對認證 Cookie 使用 SameSite=None+Secure
+		if !strings.Contains(strings.ToLower(modifiedCookie), "samesite") {
+			// 檢查是否為認證相關的 cookie
+			lowerCookie := strings.ToLower(modifiedCookie)
+			isAuthCookie := strings.Contains(lowerCookie, "jsessionid") ||
+				strings.Contains(lowerCookie, "auth") ||
+				strings.Contains(lowerCookie, "login") ||
+				strings.Contains(lowerCookie, "session") ||
+				strings.Contains(lowerCookie, "user")
+
+			if isAuthCookie && strings.HasPrefix(p.publicHost, "https://") {
+				// HTTPS 環境的認證 Cookie 使用 SameSite=None+Secure
+				modifiedCookie += "; SameSite=None"
+				if !strings.Contains(strings.ToLower(modifiedCookie), "secure") {
+					modifiedCookie += "; Secure"
+				}
+				log.Printf("🔐 本地認證Cookie使用SameSite=None+Secure: %s", modifiedCookie)
+			} else if isAuthCookie {
+				// HTTP 環境的認證 Cookie 使用 SameSite=Lax
+				modifiedCookie += "; SameSite=Lax"
+				log.Printf("🔐 本地認證Cookie使用SameSite=Lax: %s", modifiedCookie)
+			} else {
+				// 其他 Cookie 根據環境設置
+				if strings.HasPrefix(p.publicHost, "https://") {
+					modifiedCookie += "; SameSite=None"
+				} else {
+					modifiedCookie += "; SameSite=Lax"
+				}
+			}
+		}
+
 		log.Printf("Cookie轉換 (localhost): %s -> %s", originalCookie, modifiedCookie)
 		return modifiedCookie
 	}
@@ -894,9 +997,31 @@ func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
 		modifiedCookie += "; Path=/"
 	}
 
-	// 添加 SameSite 屬性以確保跨站請求時 cookie 可以被發送
+	// 🔧 添加 SameSite 屬性以確保跨站請求時 cookie 可以被發送
+	// 針對認證 Cookie 使用 SameSite=None 配合 Secure 屬性
 	if !strings.Contains(strings.ToLower(modifiedCookie), "samesite") {
-		modifiedCookie += "; SameSite=None"
+		// 檢查是否為認證相關的 cookie（通常包含 JSESSIONID、auth、login 等關鍵字）
+		lowerCookie := strings.ToLower(modifiedCookie)
+		isAuthCookie := strings.Contains(lowerCookie, "jsessionid") ||
+			strings.Contains(lowerCookie, "auth") ||
+			strings.Contains(lowerCookie, "login") ||
+			strings.Contains(lowerCookie, "session") ||
+			strings.Contains(lowerCookie, "user")
+
+		if isAuthCookie {
+			// 認證 Cookie 使用 SameSite=None 配合 Secure 以確保跨站登入狀態正確傳遞
+			modifiedCookie += "; SameSite=None"
+
+			// 確保認證 Cookie 有 Secure 屬性（SameSite=None 必須配合 Secure）
+			if !strings.Contains(strings.ToLower(modifiedCookie), "secure") {
+				modifiedCookie += "; Secure"
+			}
+
+			log.Printf("🔐 認證Cookie使用SameSite=None+Secure: %s", modifiedCookie)
+		} else {
+			// 其他 Cookie 使用 SameSite=None
+			modifiedCookie += "; SameSite=None"
+		}
 	}
 
 	log.Printf("🌐 創建 utaipei.edu.tw cookie: %s -> %s", originalCookie, modifiedCookie)
@@ -1032,10 +1157,30 @@ func main() {
 
 		// 特別記錄權限檢查請求的完整cookie
 		if strings.Contains(c.Request.URL.Path, "perchk.jsp") ||
-			strings.Contains(c.Request.URL.Path, "check") {
+			strings.Contains(c.Request.URL.Path, "check") ||
+			strings.Contains(c.Request.URL.Path, "uaa002") {
 			log.Printf("🚨 權限檢查: %s", c.Request.URL.String())
 			log.Printf("🍪 完整Cookie: %s", cookies)
 			log.Printf("🔗 Referer: %s", referer)
+
+			// 🔧 對於 uaa002 頁面，確保所有必要的認證 headers 都存在
+			if strings.Contains(c.Request.URL.Path, "uaa002") {
+				log.Printf("🔐 UAA002 頁面認證檢查:")
+				log.Printf("  - Cookie長度: %d 字元", len(cookies))
+				log.Printf("  - User-Agent: %s", userAgent)
+				log.Printf("  - Referer: %s", referer)
+
+				// 檢查 Cookie 中是否包含必要的認證信息
+				if cookies != "" {
+					if strings.Contains(strings.ToLower(cookies), "jsessionid") {
+						log.Printf("  ✅ 發現 JSESSIONID")
+					} else {
+						log.Printf("  ❌ 未發現 JSESSIONID - 可能影響登入狀態")
+					}
+				} else {
+					log.Printf("  ❌ 完全沒有 Cookie - 這會導致登入狀態丟失")
+				}
+			}
 		}
 
 		c.Next()
