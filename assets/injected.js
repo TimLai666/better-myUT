@@ -334,7 +334,7 @@ function showSearchResults(query, menuItems, resultsDiv, statsDiv, originalTree,
     }
     
     const matches = menuItems.filter(item => 
-        item.text.toLowerCase().includes(query.toLowerCase())
+        item.type === 'function' && item.text.toLowerCase().includes(query.toLowerCase())
     );
     
     console.log(`✅ 找到 ${matches.length} 個匹配項目`);
