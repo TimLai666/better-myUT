@@ -46,14 +46,12 @@ function insertFooter(frame) {
         min-height: 8%;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
+        justify-content: center;
         row-gap: 0px;
         gap: 0px;
         background-color: #f8f9fa;
         padding: 2px 10px;
-        padding-bottom: 3px;
-        text-align: center;
         font-size: 14px;
         line-height: 1.5;
         color: #6c757d;
@@ -62,7 +60,7 @@ function insertFooter(frame) {
         word-break: break-all;
     `;
     footer.innerHTML = `<p style="margin:0;">此介面改良版本由 <a href="https://github.com/TimLai666" target="_blank" style="color: #007bff; text-decoration: none;">TimLai666</a> 提供，歡迎學校採用。然由於此系統使用了過時已遭淘汰的 Frameset 技術，建議建置全新系統。</p>
-    <p>此專案的開源儲存庫：<a href="https://github.com/TimLai666/better-myUT" target="_blank" style="color: #007bff; text-decoration: none;">點我</a></p>`;
+    <p style="margin:0;">此專案的開源儲存庫：<a href="https://github.com/TimLai666/better-myUT" target="_blank" style="color: #007bff; text-decoration: none;">點我</a></p>`;
     frame.document.body.appendChild(footer);
 }
 
