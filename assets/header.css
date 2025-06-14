@@ -1,47 +1,129 @@
 /* -------- Header 樣式 -------- */
+.idxHeader {
+  background-image: none !important;
+  background: linear-gradient(
+    135deg,
+    #f8fafc 0%,
+    #e2e8f0 20%,
+    #cbd5e1 100%
+  ) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.schoolLogo {
+  height: 100px !important;
+  z-index: 1000 !important;
+  background: none !important;
+}
+
+.schoolLogo > img {
+  height: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin-top: -10px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
 /* 修改密碼按鈕 - 使用新的主色調 + 超小按鈕樣式 */
 #change_pwd {
-    z-index: 999 !important;
-    /* 繼承上面的主要按鈕樣式 */
-    /* 超小按鈕樣式 */
-    padding: 4px 8px !important;
-    font-size: 11px !important;
-    min-height: 26px !important;
-    border-radius: 4px !important;
+  z-index: 999 !important;
+  /* 繼承上面的主要按鈕樣式 */
+  /* 超小按鈕樣式 */
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  min-height: 26px !important;
+  border-radius: 4px !important;
 }
 
 /* 登出按鈕 - 使用危險色調 + 超小按鈕樣式 */
 #relogin {
-    z-index: 999 !important;
-    /* 使用 danger 樣式 */
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    color: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2) !important;
-    /* 超小按鈕樣式 */
-    padding: 4px 8px !important;
-    font-size: 11px !important;
-    min-height: 26px !important;
-    border-radius: 4px !important;
+  z-index: 999 !important;
+  /* 使用 danger 樣式 */
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2) !important;
+  /* 超小按鈕樣式 */
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  min-height: 26px !important;
+  border-radius: 4px !important;
 }
 
 #relogin:hover {
-    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
 }
 
 @media (max-width: 768px) {
-    /* 修改密碼按鈕 - 右下角 */
-    #change_pwd {
-        position: fixed !important;
-        bottom: 10px !important;
-        right: 90px !important;
-    }
-    
-    /* 登出按鈕 - 右下角 */
-    #relogin {
-        position: fixed !important;
-        bottom: 10px !important;
-        right: 10px !important;
-    }
-} 
+  /* 修改密碼按鈕 - 右下角 */
+  #change_pwd {
+    position: fixed !important;
+    bottom: 10px !important;
+    right: 90px !important;
+  }
+
+  /* 登出按鈕 - 右下角 */
+  #relogin {
+    position: fixed !important;
+    bottom: 10px !important;
+    right: 10px !important;
+  }
+
+  /* 縮小校徽 */
+  .schoolLogo > img {
+    margin-top: 43px !important;
+    margin-left: 310px !important;
+    height: auto !important;
+    width: min(30dvw, 30vw) !important;
+  }
+
+  /* 原始表格保持，但調整排版 */
+  .idxHeader table[width="100%"] {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  /* 調整欄位寬度比例 */
+  .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
+    width: auto !important;
+  }
+
+  .idxHeader table[width="100%"] td:last-child {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+
+  /* 隱藏第一格空白 */
+  .idxHeader table[width="100%"] td[width="50%"] {
+    display: none !important;
+  }
+
+  /* 中間格改為 flex */
+  .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 4px 8px !important;
+    padding: 6px 0 !important;
+  }
+
+  /* 學期資訊保持在原位但調整樣式 */
+  .idxHeader td #info {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  /* 右側格子調整 */
+  .idxHeader table[width="100%"] td:last-child {
+    font-size: 10px !important;
+    text-align: right !important;
+    padding: 6px 0 !important;
+  }
+}

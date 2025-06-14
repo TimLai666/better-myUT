@@ -1,211 +1,134 @@
 .sbody {
-    padding: 15px 20px !important;
+  padding: 15px 20px !important;
 }
 
 font {
-    line-height: 1.5 !important;
+  line-height: 1.5 !important;
 }
 
 center {
-    padding: 10px 0 !important;
-}
-
-.idxHeader {
-    background-image: none !important;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 20%, #cbd5e1 100%) !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-
-.schoolLogo {
-    height: 100px !important;
-    z-index: 1000 !important;
-    background: none !important;
-}
-
-.schoolLogo > img {
-    height: 100% !important;
-    max-height: 100% !important;
-    width: auto !important;
-    max-width: 100% !important;
-    margin-top: -10px !important;
-    object-fit: contain !important;
-    object-position: center !important;
+  padding: 10px 0 !important;
 }
 
 /* 顯示/隱藏選單按鈕 */
 #switch {
-    height: 30px !important;
-    padding: 5px 8px !important;
-    position: fixed !important;
-    display: block;
-    color: #ffffff !important;
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    border: none !important;
-    border-radius: 6px !important;
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2) !important;
-    top: 70px !important;
-    left: 20px !important;
-    z-index: 1000 !important;
-    cursor: pointer !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: 30px !important;
+  padding: 5px 8px !important;
+  position: fixed !important;
+  display: block;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2) !important;
+  top: 70px !important;
+  left: 20px !important;
+  z-index: 1000 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 #switch:hover {
-    background: linear-gradient(135deg, #059669, #047857) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* 搜尋按鈕 */
 #search {
-    padding: 5px 8px !important;
+  padding: 5px 8px !important;
 }
 
 #master {
-    margin: 0 !important;
-}
-
-@media (max-width: 768px) {
-    /* 縮小校徽 */
-    .schoolLogo > img {
-        margin-top: 43px !important;
-        margin-left: 310px !important;
-        height: auto !important;
-        width: calc(30dvw) !important;
-    }
-    
-    /* 原始表格保持，但調整排版 */
-    .idxHeader table[width="100%"] {
-        width: 100% !important;
-        table-layout: fixed !important;
-    }
-    
-    /* 調整欄位寬度比例 */
-    .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
-        width: auto !important;
-    }
-    
-    .idxHeader table[width="100%"] td:last-child {
-        width: 120px !important;
-        min-width: 120px !important;
-        max-width: 120px !important;
-    }
-    
-    /* 隱藏第一格空白 */
-    .idxHeader table[width="100%"] td[width="50%"] {
-        display: none !important;
-    }
-    
-    /* 中間格改為 flex */
-    .idxHeader table[width="100%"] td[style*="vertical-align:bottom"] {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        align-items: center !important;
-        gap: 4px 8px !important;
-        padding: 6px 0 !important;
-    }
-    
-    /* 學期資訊保持在原位但調整樣式 */
-    .idxHeader td #info {
-        font-size: 11px !important;
-        line-height: 1.2 !important;
-        word-break: break-word !important;
-        white-space: normal !important;
-    }
-    
-    /* 右側格子調整 */
-    .idxHeader table[width="100%"] td:last-child {
-        font-size: 10px !important;
-        text-align: right !important;
-        padding: 6px 0 !important;
-    }
+  margin: 0 !important;
 }
 
 /* 美化登入中彈出視窗 - 深藍色毛玻璃特效 */
 .blockUI.blockMsg.blockPage {
-    background: rgba(29, 78, 216, 0.55) !important;
-    backdrop-filter: blur(25px) saturate(200%) !important;
-    border: 1px solid rgba(59, 130, 246, 0.7) !important;
-    border-radius: 20px !important;
-    box-shadow: none !important;
-    padding: 45px 35px !important;
-    width: 300px !important;
-    left: 50dvw !important;
-    top: 40dvh !important;
-    transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    position: relative !important;
+  background: rgba(29, 78, 216, 0.55) !important;
+  backdrop-filter: blur(25px) saturate(200%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.7) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+  padding: 45px 35px !important;
+  width: 300px !important;
+  left: min(50dvw, 50vw) !important;
+  top: min(40dvh, 40vh) !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  position: relative !important;
 }
 
 .blockUI.blockMsg.blockPage::before {
-    content: '' !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    background: rgba(59, 130, 246, 0.1) !important;
-    border-radius: 20px !important;
-    pointer-events: none !important;
-    z-index: -1 !important;
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 20px !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
 }
 
 .blockUI.blockMsg.blockPage h1 {
-    color: #ffffff !important;
-    font-size: 18px !important;
-    font-weight: 500 !important;
-    margin: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 16px !important;
-    line-height: 1.5 !important;
-    letter-spacing: 0.5px !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 16px !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* 隱藏原始圖片 */
 .blockUI.blockMsg.blockPage h1 img {
-    display: none !important;
+  display: none !important;
 }
 
 /* 簡潔美觀的三點loader */
 .blockUI.blockMsg.blockPage h1::before {
-    content: '⋯' !important;
-    font-size: 24px !important;
-    color: #ffffff !important;
-    animation: dotWave 1.4s ease-in-out infinite !important;
-    display: block !important;
-    text-align: center !important;
-    letter-spacing: 4px !important;
-    line-height: 1 !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  content: "⋯" !important;
+  font-size: 24px !important;
+  color: #ffffff !important;
+  animation: dotWave 1.4s ease-in-out infinite !important;
+  display: block !important;
+  text-align: center !important;
+  letter-spacing: 4px !important;
+  line-height: 1 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
 @keyframes dotWave {
-    0%, 20% {
-        opacity: 0.4;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    80%, 100% {
-        opacity: 0.4;
-        transform: scale(1);
-    }
+  0%,
+  20% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  80%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
 }
 
 @keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
