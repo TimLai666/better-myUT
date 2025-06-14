@@ -42,6 +42,21 @@ center {
     padding: 10px 0 !important;
 }
 
+.schoolLogo {
+    height: 60px !important;
+    z-index: 1000 !important;
+    background: none !important;
+}
+
+.schoolLogo > img {
+    height: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
 /* ======== 超級好看的平面風格按鈕系統 ======== */
 
 /* 按鈕基礎樣式 */
@@ -542,10 +557,21 @@ input[type="file"].btn-block {
     position: fixed !important;
     display: block;
     color: #ffffff !important;
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2) !important;
     top: 70px !important;
     left: 20px !important;
     z-index: 1000 !important;
     cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#switch:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* 搜尋按鈕 */
@@ -830,7 +856,7 @@ HTML 使用範例：
 }
 
 /* 表頭樣式 */
-.stable thead {
+.stable thead{
     background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
 }
 
@@ -906,9 +932,9 @@ HTML 使用範例：
 
 /* 表格內容的特殊樣式 */
 .stable td input[type="text"],
-.stable td input[type="number"],
-.stable td input[type="email"],
-.stable td select,
+.stable td input[type="number"], 
+.stable td input[type="email"], 
+.stable td select, 
 .stable td textarea {
     width: 100% !important;
     border: 1px solid #e5e7eb !important;
@@ -920,8 +946,8 @@ HTML 使用範例：
     transition: border-color 0.15s ease-in-out !important;
 }
 
-.stable td input:focus,
-.stable td select:focus,
+.stable td input:focus, 
+.stable td select:focus, 
 .stable td textarea:focus {
     border-color: #6366f1 !important;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
@@ -929,8 +955,8 @@ HTML 使用範例：
 }
 
 /* 表格內按鈕樣式 */
-.stable td button,
-.stable td input[type="button"],
+.stable td button, 
+.stable td input[type="button"], 
 .stable td input[type="submit"] {
     padding: 6px 12px !important;
     font-size: 12px !important;
@@ -947,7 +973,7 @@ HTML 使用範例：
         border-radius: 6px !important;
     }
     
-    .stable th,
+    .stable th, 
     .stable td {
         padding: 10px 12px !important;
     }

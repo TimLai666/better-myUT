@@ -1,32 +1,19 @@
-// Injected helper JS for better-myUT
-(function(){
-  function updateSwitch() {
-    try {
-      const bannerDoc = parent && parent.banner && parent.banner.document;
-      const mainDoc   = frames['Main'] && frames['Main'].document;
-      if (!bannerDoc || !mainDoc) return;
-
-      const btn = bannerDoc.getElementById('switch');
-      if (!btn) return;
-
-      const chk = mainDoc.getElementById('chk');
-      if (chk) {
-        // 移到畫面外並停用互動
-        btn.style.position = 'fixed';
-        btn.style.left = '-9999px';
-        btn.style.top  = '-9999px';
-        btn.style.pointerEvents = 'none';
-      } else {
-        // 恢復原狀（若按鈕需要顯示時）
-        btn.style.position = '';
-        btn.style.left = '';
-        btn.style.top  = '';
-        btn.style.pointerEvents = '';
-      }
-    } catch(e) {}
-  }
-
-  // 初始化一次，之後每 300ms 檢查
-  updateSwitch();
-  setInterval(updateSwitch, 300);
-})();
+window.addEventListener('load', () => {
+    // 頁面完全載入
+    const banner = frames['banner'];
+    if (banner) {
+        console.log('🚀 通過 load 事件獲取到 banner:', banner);
+        
+        const logoDiv = banner.document.querySelector('.schoolLogo');
+        if (logoDiv) {
+            const logoImg = banner.document.createElement('img');
+            logoImg.src = "/utaipei/pics/logo.png";
+            logoImg.alt = "logo";
+            logoDiv.appendChild(logoImg);
+            
+            console.log('✅ Logo 已添加');
+        } else {
+            console.log('❌ 找不到 .schoolLogo 元素');
+        }
+    }
+});
