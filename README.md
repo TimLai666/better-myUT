@@ -71,8 +71,8 @@ docker run -d --name myut -p 80:8080 \
 | 變數 | 預設值 | 說明 |
 | --- | --- | --- |
 | `PORT` | `8080` | 內部監聽埠號 |
-| `TARGET_HOST` | `https://my.utaipei.edu.tw` | 上游校務系統根網址 |
-| `PROXY_HOST` | `http://127.0.0.1:8080` | 代理公開網址，用於 HTML 重寫 |
+| `TARGET_URL` | `https://my.utaipei.edu.tw` | 上游校務系統根網址 |
+| `PROXY_URL` | `http://127.0.0.1:8080` | 代理公開網址，用於 HTML 重寫 |
 
 ---
 

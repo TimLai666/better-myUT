@@ -18,18 +18,10 @@ import (
 	"golang.org/x/net/html"
 )
 
-// 輔助函數
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 type ProxyServer struct {
-	client     *http.Client
-	targetHost string // upstream 目標網站
-	publicHost string // 部署後對外的代理伺服器網址
+	client    *http.Client
+	targetURL string // upstream 目標網站
+	publicURL string // 部署後對外的代理伺服器網址
 }
 
 // HTML 解析請求結構
@@ -53,18 +45,18 @@ type MenuItem struct {
 	Type string `json:"type"`
 }
 
-func NewProxyServer(targetHost, publicHost string, jar http.CookieJar) *ProxyServer {
+func NewProxyServer(targetURL, publicURL string, jar http.CookieJar) *ProxyServer {
 	client := &http.Client{
 		Jar:     jar,
 		Timeout: 30 * time.Second,
 	}
 
-	log.Printf("代理伺服器設置 - 目標: %s, 公開: %s", targetHost, publicHost)
+	log.Printf("代理伺服器設置 - 目標: %s, 公開: %s", targetURL, publicURL)
 
 	return &ProxyServer{
-		client:     client,
-		targetHost: targetHost,
-		publicHost: publicHost,
+		client:    client,
+		targetURL: targetURL,
+		publicURL: publicURL,
 	}
 }
 
@@ -135,7 +127,7 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 
 	// 使用完整路徑，不去掉前綴
 	path := r.URL.Path
-	currentURL := p.targetHost + path
+	currentURL := p.targetURL + path
 	if r.URL.RawQuery != "" {
 		currentURL += "?" + r.URL.RawQuery
 	}
@@ -224,19 +216,19 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 		if r.Header.Get("Referer") != "" {
 			// 將Referer中的代理地址替換為目標地址
 			referer := r.Header.Get("Referer")
-			referer = strings.ReplaceAll(referer, p.publicHost, p.targetHost)
+			referer = strings.ReplaceAll(referer, p.publicURL, p.targetURL)
 			proxyReq.Header.Set("Referer", referer)
 		} else {
 			// 如果沒有 Referer，設置正確的學校首頁 Referer
-			proxyReq.Header.Set("Referer", p.targetHost+"/utaipei/index_sky.html")
+			proxyReq.Header.Set("Referer", p.targetURL+"/utaipei/index_sky.html")
 		}
 
 		// 🔐 對於認證頁面，強制設置正確的學校首頁作為 Referer
 		if strings.Contains(strings.ToLower(currentURL), "uaa") ||
 			strings.Contains(strings.ToLower(currentURL), "auth") ||
 			strings.Contains(strings.ToLower(currentURL), "login") {
-			proxyReq.Header.Set("Referer", p.targetHost+"/utaipei/index_sky.html")
-			log.Printf("🏫 認證頁面設置學校首頁Referer: %s", p.targetHost+"/utaipei/index_sky.html")
+			proxyReq.Header.Set("Referer", p.targetURL+"/utaipei/index_sky.html")
+			log.Printf("🏫 認證頁面設置學校首頁Referer: %s", p.targetURL+"/utaipei/index_sky.html")
 		}
 
 		// 🔐 一律確保所有請求都有完整的認證和瀏覽器headers
@@ -301,19 +293,19 @@ func (p *ProxyServer) doProxyRequest(r *http.Request) (*http.Response, []byte, e
 		// 🔧 設置Origin header（對於CORS很重要）- 確保來源看起來是學校官方網站
 		if origin := r.Header.Get("Origin"); origin != "" {
 			// 將Origin中的代理地址替換為目標地址
-			origin = strings.ReplaceAll(origin, p.publicHost, p.targetHost)
+			origin = strings.ReplaceAll(origin, p.publicURL, p.targetURL)
 			proxyReq.Header.Set("Origin", origin)
 		} else {
 			// 總是設置學校官方網站作為 Origin
-			proxyReq.Header.Set("Origin", p.targetHost)
+			proxyReq.Header.Set("Origin", p.targetURL)
 		}
 
 		// 🔐 對於認證相關請求，強制設置學校官方網站作為 Origin
 		if strings.Contains(strings.ToLower(currentURL), "uaa") ||
 			strings.Contains(strings.ToLower(currentURL), "auth") ||
 			strings.Contains(strings.ToLower(currentURL), "login") {
-			proxyReq.Header.Set("Origin", p.targetHost)
-			log.Printf("🏫 認證頁面設置學校Origin: %s", p.targetHost)
+			proxyReq.Header.Set("Origin", p.targetURL)
+			log.Printf("🏫 認證頁面設置學校Origin: %s", p.targetURL)
 		}
 
 		// 創建不跟隨重定向的 client
@@ -522,7 +514,7 @@ func (p *ProxyServer) addTableDataLabels(html string) string {
 
 func (p *ProxyServer) replaceTargetURLs(html string, basePath string) string {
 	// 取得代理伺服器對外網址
-	proxyHost := p.publicHost
+	proxyHost := p.publicURL
 	if proxyHost == "" {
 		proxyHost = "http://127.0.0.1:8080"
 	}
@@ -848,7 +840,7 @@ func (p *ProxyServer) ProxyHandler(c *gin.Context) {
 // 轉換Set-Cookie header，使其適用於代理域名
 func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 	// 解析代理主機的域名
-	proxyURL, err := url.Parse(p.publicHost)
+	proxyURL, err := url.Parse(p.publicURL)
 	if err != nil {
 		log.Printf("警告：無法解析代理主機URL: %v", err)
 		return cookieValue
@@ -873,7 +865,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 		}
 
 		// 對於HTTP代理，移除secure屬性
-		if !strings.HasPrefix(p.publicHost, "https://") {
+		if !strings.HasPrefix(p.publicURL, "https://") {
 			modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
 		}
 
@@ -898,7 +890,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 				strings.Contains(lowerCookie, "session") ||
 				strings.Contains(lowerCookie, "user")
 
-			if isAuthCookie && strings.HasPrefix(p.publicHost, "https://") {
+			if isAuthCookie && strings.HasPrefix(p.publicURL, "https://") {
 				// HTTPS 環境的認證 Cookie 使用 SameSite=None+Secure
 				modifiedCookie += "; SameSite=None"
 				if !strings.Contains(strings.ToLower(modifiedCookie), "secure") {
@@ -911,7 +903,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 				log.Printf("🔐 本地認證Cookie使用SameSite=Lax: %s", modifiedCookie)
 			} else {
 				// 其他 Cookie 根據環境設置
-				if strings.HasPrefix(p.publicHost, "https://") {
+				if strings.HasPrefix(p.publicURL, "https://") {
 					modifiedCookie += "; SameSite=None"
 				} else {
 					modifiedCookie += "; SameSite=Lax"
@@ -931,7 +923,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 	modifiedCookie = domainRegex.ReplaceAllString(modifiedCookie, "; Domain="+proxyDomain)
 
 	// 如果是HTTPS代理就保留secure，否則移除
-	if !strings.HasPrefix(p.publicHost, "https://") {
+	if !strings.HasPrefix(p.publicURL, "https://") {
 		modifiedCookie = regexp.MustCompile(`(?i);\s*secure\s*`).ReplaceAllString(modifiedCookie, "")
 	}
 
@@ -951,7 +943,7 @@ func (p *ProxyServer) transformSetCookie(cookieValue string) string {
 
 func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
 	// 解析代理主機的域名
-	proxyURL, err := url.Parse(p.publicHost)
+	proxyURL, err := url.Parse(p.publicURL)
 	if err != nil {
 		log.Printf("警告：無法解析代理主機URL: %v", err)
 		return ""
@@ -1110,9 +1102,14 @@ func main() {
 		port = "8080"
 	}
 
-	publicHost := os.Getenv("PROXY_HOST")
-	if publicHost == "" {
-		publicHost = "http://127.0.0.1:8080"
+	publicURL := os.Getenv("PROXY_URL")
+	if publicURL == "" {
+		publicURL = "http://127.0.0.1:8080"
+	}
+
+	targetURL := os.Getenv("TARGET_URL")
+	if targetURL == "" {
+		targetURL = "https://my.utaipei.edu.tw"
 	}
 
 	// 創建共享的 cookie jar
@@ -1124,10 +1121,10 @@ func main() {
 	}
 
 	// 創建 myUT 代理
-	myUTProxy := NewProxyServer("https://my.utaipei.edu.tw", publicHost, jar)
+	myUTProxy := NewProxyServer(targetURL, publicURL, jar)
 
 	log.Printf("啟動 gin 代理伺服器於端口 %s", port)
-	log.Printf("主要目標主機: %s", myUTProxy.targetHost)
+	log.Printf("主要目標主機: %s", myUTProxy.targetURL)
 
 	router := gin.Default()
 
