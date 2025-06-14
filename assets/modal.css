@@ -1,7 +1,7 @@
 /* 公告視窗美化 -------------------------------------------------- */
 .ui-widget-content.ui-draggable {
   width: min(95dvw, 95vw) !important;
-  height: min(95dvh, 95vh) !important;
+  height: 88% !important;
   padding: 10px 20px !important;
   max-height: min(95dvh, 95vh) !important;
   background: #ffffff !important;

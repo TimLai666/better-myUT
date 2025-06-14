@@ -1,6 +1,7 @@
 window.addEventListener('load', () => {
     // 頁面完全載入
     const banner = frames['banner'];
+    const main = frames['Main'];
     if (banner) {
         console.log('🚀 通過 load 事件獲取到 banner:', banner);
 
@@ -24,9 +25,38 @@ window.addEventListener('load', () => {
         }
     }
 
+    insertFooter(main);
+
     // 添加側邊欄搜尋功能
     setTimeout(initSearch, 1000);
 });
+
+
+function insertFooter(frame) {
+    // 為頁面 body 添加底部間距，避免內容被 footer 覆蓋
+    frame.document.body.style.paddingBottom = '120px';
+
+    const footer = frame.document.createElement('div');
+    footer.id = 'customFooter';
+    footer.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 40px;
+        background-color: #f8f9fa;
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+        color: #6c757d;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        z-index: 1000;
+    `;
+    footer.innerHTML = `
+        <p>此介面美化版本由 <a href="https://github.com/TimLai666" target="_blank" style="color: #007bff; text-decoration: none;">TimLai666</a> 提供，歡迎學校採用。然由於此系統使用了過時已遭淘汰的 Frameset 技術，建議建置全新系統。</p>
+        `;
+    frame.document.body.appendChild(footer);
+}
 
 
 
