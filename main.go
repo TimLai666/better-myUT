@@ -414,8 +414,12 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 
 	// 如為 frameset 頁（頂層），再注入 JavaScript
 	jsInjection := ""
+	iconInjection := ""
 	if strings.Contains(strings.ToLower(htmlStr), "<frameset") {
 		jsInjection = "\n<script>\n" + assets.InjectedJS + "\n</script>"
+
+		// 注入圖標
+		iconInjection = "<link rel='icon' href='/assets/img/icon.png' type='image/x-icon'>"
 	}
 
 	// 檢查並插入 viewport
@@ -436,7 +440,7 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	// 在 </head> 之前插入 CSS 和 meta 標籤
 	headEndRegex := regexp.MustCompile(`(?i)</head>`)
 	if headEndRegex.MatchString(htmlStr) {
-		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+responsiveCSS+jsInjection+"</head>")
+		htmlStr = headEndRegex.ReplaceAllString(htmlStr, noCacheMetaTags+iconInjection+responsiveCSS+jsInjection+"</head>")
 	} else {
 		// 如果沒有 head 標籤，在 body 開始後插入
 		bodyStartRegex := regexp.MustCompile(`(?i)<body[^>]*>`)
@@ -1182,6 +1186,8 @@ func main() {
 
 		c.Next()
 	})
+
+	router.Static("/assets/img", "./assets/img") // 靜態資源路由
 
 	// 字型檔案路由
 	router.GET("/font/TaipeiSansTCBeta-Light.ttf", func(c *gin.Context) {

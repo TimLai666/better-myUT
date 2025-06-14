@@ -15,9 +15,12 @@
   height: 100px !important;
   z-index: 1000 !important;
   background: none !important;
+  display: flex !important;
+  align-items: start !important;
 }
 
-.schoolLogo > img {
+.schoolLogo > #logo {
+  display: block !important;
   height: 100% !important;
   max-height: 100% !important;
   width: auto !important;
@@ -25,6 +28,15 @@
   margin-top: -10px !important;
   object-fit: contain !important;
   object-position: center !important;
+}
+
+.schoolLogo > #smallLogo {
+  /* display: none !important; */
+  display: block !important;
+  /* margin-top: 43px !important;
+  margin-left: 310px !important; */
+  height: 70% !important;
+  width: auto !important;
 }
 
 /* 修改密碼按鈕 - 使用新的主色調 + 超小按鈕樣式 */
@@ -74,11 +86,16 @@
   }
 
   /* 縮小校徽 */
-  .schoolLogo > img {
-    margin-top: 43px !important;
-    margin-left: 310px !important;
+  .schoolLogo > #smallLogo {
+    display: block !important;
+    margin-top: 42px !important;
+    margin-left: 350px !important;
     height: auto !important;
-    width: min(30dvw, 30vw) !important;
+    width: 40px !important;
+  }
+
+  .schoolLogo > #logo {
+    display: none !important;
   }
 
   /* 原始表格保持，但調整排版 */
