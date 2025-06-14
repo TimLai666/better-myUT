@@ -1,0 +1,288 @@
+/* ======== 超美觀的 .stable 表格樣式 ======== */
+
+/* 表格容器 */
+.stable {
+    width: 100% !important;
+    max-width: 95dvw !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    margin: 16px 10px !important;
+    font-family: 'Taipei Sans TC', sans-serif !important;
+}
+
+/* 表頭樣式 */
+.stable thead{
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
+}
+
+.stable th {
+    padding: 16px 20px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: #374151 !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    position: relative !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+.stable th:first-child {
+    border-top-left-radius: 8px !important;
+}
+
+.stable th:last-child {
+    border-top-right-radius: 8px !important;
+}
+
+/* 表頭分隔線 */
+.stable th:not(:last-child)::after {
+    content: '' !important;
+    position: absolute !important;
+    right: 0 !important;
+    top: 25% !important;
+    height: 50% !important;
+    width: 1px !important;
+    background: #d1d5db !important;
+}
+
+/* 表格內容 */
+.stable tbody tr {
+    transition: all 0.2s ease-in-out !important;
+    background: #ffffff !important;
+}
+
+.stable tbody tr:nth-child(even) {
+    background: #f9fafb !important;
+}
+
+.stable tbody tr:hover {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.stable td {
+    padding: 14px 20px !important;
+    font-size: 13px !important;
+    color: #374151 !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+    vertical-align: middle !important;
+    position: relative !important;
+    line-height: 1.4 !important;
+}
+
+/* 最後一行移除底邊框 */
+.stable tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.stable tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px !important;
+}
+
+.stable tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px !important;
+}
+
+/* 表格內容的特殊樣式 */
+.stable td input[type="text"],
+.stable td input[type="number"], 
+.stable td input[type="email"], 
+.stable td select, 
+.stable td textarea {
+    width: 100% !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 4px !important;
+    padding: 6px 8px !important;
+    font-size: 13px !important;
+    font-family: 'Taipei Sans TC', sans-serif !important;
+    background: #ffffff !important;
+    transition: border-color 0.15s ease-in-out !important;
+}
+
+.stable td input:focus, 
+.stable td select:focus, 
+.stable td textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+    outline: none !important;
+}
+
+/* 表格內按鈕樣式 */
+.stable td button, 
+.stable td input[type="button"], 
+.stable td input[type="submit"] {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    min-height: 32px !important;
+    border-radius: 4px !important;
+    margin: 2px !important;
+}
+
+/* 表格狀態指示器 */
+.stable .status-active {
+    color: #059669 !important;
+    font-weight: 500 !important;
+}
+
+.stable .status-active::before {
+    content: "●" !important;
+    color: #10b981 !important;
+    margin-right: 6px !important;
+}
+
+.stable .status-inactive {
+    color: #dc2626 !important;
+    font-weight: 500 !important;
+}
+
+.stable .status-inactive::before {
+    content: "●" !important;
+    color: #ef4444 !important;
+    margin-right: 6px !important;
+}
+
+.stable .status-pending {
+    color: #d97706 !important;
+    font-weight: 500 !important;
+}
+
+.stable .status-pending::before {
+    content: "●" !important;
+    color: #f59e0b !important;
+    margin-right: 6px !important;
+}
+
+/* 表格數字對齊 */
+.stable .text-right {
+    text-align: right !important;
+}
+
+.stable .text-center {
+    text-align: center !important;
+}
+
+.stable .font-mono {
+    font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+}
+
+/* 表格內連結樣式 */
+.stable a {
+    color: #4338ca !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    transition: color 0.15s ease-in-out !important;
+}
+
+.stable a:hover {
+    color: #3730a3 !important;
+    text-decoration: underline !important;
+}
+
+/* 表格空狀態 */
+.stable .empty-state {
+    text-align: center !important;
+    padding: 40px 20px !important;
+    color: #6b7280 !important;
+    font-style: italic !important;
+}
+
+.stable .empty-state::before {
+    content: "📄" !important;
+    font-size: 32px !important;
+    display: block !important;
+    margin-bottom: 12px !important;
+    opacity: 0.5 !important;
+}
+
+/* 表格載入狀態 */
+.stable.loading {
+    position: relative !important;
+    pointer-events: none !important;
+    opacity: 0.7 !important;
+}
+
+.stable.loading::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin: -16px 0 0 -16px !important;
+    border: 3px solid #e5e7eb !important;
+    border-top: 3px solid #6366f1 !important;
+    border-radius: 50% !important;
+    animation: table-spin 1s linear infinite !important;
+    z-index: 10 !important;
+}
+
+@keyframes table-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 可排序表頭 */
+.stable th.sortable {
+    cursor: pointer !important;
+    user-select: none !important;
+    position: relative !important;
+}
+
+.stable th.sortable:hover {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0) !important;
+}
+
+.stable th.sortable::after {
+    content: "↕️" !important;
+    position: absolute !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 12px !important;
+    opacity: 0.5 !important;
+}
+
+.stable th.sortable.sort-asc::after {
+    content: "↑" !important;
+    opacity: 1 !important;
+    color: #6366f1 !important;
+}
+
+.stable th.sortable.sort-desc::after {
+    content: "↓" !important;
+    opacity: 1 !important;
+    color: #6366f1 !important;
+}
+
+@media (max-width: 768px) {
+    /* 響應式設計 */
+    .stable {
+        font-size: 12px !important;
+        margin: 8px 0 !important;
+        border-radius: 6px !important;
+    }
+    
+    .stable th, 
+    .stable td {
+        padding: 10px 12px !important;
+    }
+    
+    .stable th {
+        font-size: 13px !important;
+    }
+    
+    .stable td {
+        font-size: 12px !important;
+    }
+    
+    /* 小螢幕時隱藏不重要的欄位 */
+    .stable .hide-mobile {
+        display: none !important;
+    }
+} 

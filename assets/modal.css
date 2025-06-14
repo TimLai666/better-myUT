@@ -1,0 +1,31 @@
+/* 公告視窗美化 -------------------------------------------------- */
+.ui-widget-content.ui-draggable {
+    width: 95dvw !important;
+    height: 95dvh !important;
+    padding: 10px 20px !important;
+    max-height: 95dvh !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    color: #333 !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    overflow-y: auto !important;
+}
+
+/* 公告標題 */
+.ui-widget-content.ui-draggable h2,
+.ui-widget-content.ui-draggable .title {
+    margin: 0 0 12px 0 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #222 !important;
+}
+
+/* 公告按鈕美化 - 使用新的按鈕系統 */
+.ui-widget-content.ui-draggable button,
+.ui-widget-content.ui-draggable .button,
+.ui-widget-content.ui-draggable input[type="button"] {
+    /* 繼承新的按鈕基礎樣式，無需重複定義 */
+} 

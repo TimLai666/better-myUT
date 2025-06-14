@@ -351,7 +351,7 @@ func (p *ProxyServer) optimizeHTML(html []byte) []byte {
 	htmlStr = regexp.MustCompile(`(?i)oncontextmenu\s*=\s*["'][^"']*["']`).ReplaceAllString(htmlStr, "")
 
 	// 讀取外部 injectedCSS 資料
-	responsiveCSS := "\n<style>\n" + assets.InjectedCSS + "\n</style>"
+	responsiveCSS := "\n<style>\n" + assets.CombinedCSS + "\n</style>"
 
 	// 如為 frameset 頁（頂層），再注入 JavaScript
 	jsInjection := ""

@@ -1,0 +1,47 @@
+/* -------- Header 樣式 -------- */
+/* 修改密碼按鈕 - 使用新的主色調 + 超小按鈕樣式 */
+#change_pwd {
+    z-index: 999 !important;
+    /* 繼承上面的主要按鈕樣式 */
+    /* 超小按鈕樣式 */
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    min-height: 26px !important;
+    border-radius: 4px !important;
+}
+
+/* 登出按鈕 - 使用危險色調 + 超小按鈕樣式 */
+#relogin {
+    z-index: 999 !important;
+    /* 使用 danger 樣式 */
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2) !important;
+    /* 超小按鈕樣式 */
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    min-height: 26px !important;
+    border-radius: 4px !important;
+}
+
+#relogin:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+@media (max-width: 768px) {
+    /* 修改密碼按鈕 - 右下角 */
+    #change_pwd {
+        position: fixed !important;
+        bottom: 10px !important;
+        right: 90px !important;
+    }
+    
+    /* 登出按鈕 - 右下角 */
+    #relogin {
+        position: fixed !important;
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+} 
