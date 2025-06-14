@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"golang.org/x/net/html"
 )
 
 // 輔助函數
@@ -29,6 +30,27 @@ type ProxyServer struct {
 	client     *http.Client
 	targetHost string // upstream 目標網站
 	publicHost string // 部署後對外的代理伺服器網址
+}
+
+// HTML 解析請求結構
+type ParseHTMLRequest struct {
+	HTMLElements []HTMLElement `json:"htmlElements"`
+	Type         string        `json:"type"` // "function" 或 "category"
+}
+
+type HTMLElement struct {
+	HTML string `json:"html"`
+}
+
+// HTML 解析回應結構
+type ParseHTMLResponse struct {
+	Items []MenuItem `json:"items"`
+}
+
+type MenuItem struct {
+	Text string `json:"text"`
+	Code string `json:"code,omitempty"`
+	Type string `json:"type"`
 }
 
 func NewProxyServer(targetHost, publicHost string, jar http.CookieJar) *ProxyServer {
@@ -896,6 +918,77 @@ func (p *ProxyServer) createUtaipeiCookie(cookieValue string) string {
 	return modifiedCookie
 }
 
+// HTML 解析處理函數
+func parseHTMLHandler(c *gin.Context) {
+	var req ParseHTMLRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "無效的請求格式"})
+		return
+	}
+
+	log.Printf("🔧 收到 HTML 解析請求，類型: %s，元素數量: %d", req.Type, len(req.HTMLElements))
+
+	var items []MenuItem
+
+	for i, element := range req.HTMLElements {
+		log.Printf("🔧 解析元素 %d: %s...", i+1, element.HTML[:min(100, len(element.HTML))])
+
+		// 解析 HTML
+		doc, err := html.Parse(strings.NewReader(element.HTML))
+		if err != nil {
+			log.Printf("❌ HTML 解析失敗: %v", err)
+			continue
+		}
+
+		// 提取文字和代碼
+		text := extractText(doc)
+		var code string
+		if req.Type == "function" {
+			code = extractCode(element.HTML)
+		}
+
+		log.Printf("✅ 解析結果 - 文字: \"%s\", 代碼: \"%s\"", text, code)
+
+		if text != "" && (req.Type == "category" || code != "") {
+			items = append(items, MenuItem{
+				Text: text,
+				Code: code,
+				Type: req.Type,
+			})
+		}
+	}
+
+	log.Printf("📋 成功解析 %d 個項目", len(items))
+
+	c.JSON(http.StatusOK, ParseHTMLResponse{Items: items})
+}
+
+// 提取 HTML 中的純文字
+func extractText(n *html.Node) string {
+	if n.Type == html.TextNode {
+		return strings.TrimSpace(n.Data)
+	}
+
+	var texts []string
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if text := extractText(c); text != "" {
+			texts = append(texts, text)
+		}
+	}
+
+	return strings.Join(texts, " ")
+}
+
+// 從 HTML 字串中提取代碼
+func extractCode(htmlStr string) string {
+	re := regexp.MustCompile(`of_display\s*\(\s*['"]([^'"]+)['"]\s*\)`)
+	matches := re.FindStringSubmatch(htmlStr)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
 func main() {
 	// 載入環境變數
 	if err := godotenv.Load(".env"); err != nil {
@@ -981,6 +1074,9 @@ func main() {
 		c.Header("Cache-Control", "public, max-age=31536000")
 		c.Data(http.StatusOK, "font/ttf", assets.TaipeiSansBold)
 	})
+
+	// HTML 解析 API
+	router.POST("/api/parse-html", parseHTMLHandler)
 
 	// 根路徑處理
 	router.GET("/", myUTProxy.ProxyHandler)
