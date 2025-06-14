@@ -11,7 +11,9 @@
     padding: 8px 6px 8px 4px !important; /* 右側留 6px，左側 4px */
     overflow-y: auto !important;
     scrollbar-width: thin !important;
-    height: 100dvh !important; /* 佔滿動態視窗高度 */
+    height: calc(100vh - 80px) !important; /* 佔滿動態視窗高度 */
+    max-height: calc(100vh - 80px) !important;
+    min-height: calc(100vh - 80px) !important;
     width: 245px !important;            /* 撐滿 frame */
     box-sizing: border-box !important; /* 邊框與 padding 佔內寬，避免超出 */
 }

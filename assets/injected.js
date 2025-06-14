@@ -348,7 +348,9 @@ function showSearchResults(query, menuItems, resultsDiv, statsDiv, originalTree,
             padding: 30px 20px;
             text-align: center;
             color: #6c757d;
+            height: 100px;
             min-height: 100px;
+            max-height: 100px;
             display: flex;
             flex-direction: column;
             justify-content: center;
