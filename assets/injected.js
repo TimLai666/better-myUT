@@ -34,7 +34,7 @@ window.addEventListener('load', () => {
 
 function insertFooter(frame) {
     // 為頁面 body 添加底部間距，避免內容被 footer 覆蓋
-    frame.document.body.style.paddingBottom = '120px';
+    frame.document.body.style.paddingBottom = '130px';
 
     const footer = frame.document.createElement('div');
     footer.id = 'customFooter';
@@ -42,19 +42,27 @@ function insertFooter(frame) {
         position: fixed;
         bottom: 0;
         left: 0;
-        width: 100%;
-        height: 40px;
+        right: 0;
+        min-height: 8%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        row-gap: 0px;
+        gap: 0px;
         background-color: #f8f9fa;
-        padding: 10px;
+        padding: 2px 10px;
+        padding-bottom: 3px;
         text-align: center;
         font-size: 14px;
+        line-height: 1.5;
         color: #6c757d;
         box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         z-index: 1000;
+        word-break: break-all;
     `;
-    footer.innerHTML = `
-        <p>此介面美化版本由 <a href="https://github.com/TimLai666" target="_blank" style="color: #007bff; text-decoration: none;">TimLai666</a> 提供，歡迎學校採用。然由於此系統使用了過時已遭淘汰的 Frameset 技術，建議建置全新系統。</p>
-        `;
+    footer.innerHTML = `<p style="margin:0;">此介面改良版本由 <a href="https://github.com/TimLai666" target="_blank" style="color: #007bff; text-decoration: none;">TimLai666</a> 提供，歡迎學校採用。然由於此系統使用了過時已遭淘汰的 Frameset 技術，建議建置全新系統。</p>
+    <p>此專案的開源儲存庫：<a href="https://github.com/TimLai666/better-myUT" target="_blank" style="color: #007bff; text-decoration: none;">點我</a></p>`;
     frame.document.body.appendChild(footer);
 }
 
