@@ -32,7 +32,7 @@ WORKDIR /root/
 COPY --from=builder /app/better-myUT .
 
 # 複製環境變數範例檔案
-COPY --from=builder /app/env.example .
+COPY --from=builder /app/.env .
 
 # 設定時區為台北
 ENV TZ=Asia/Taipei
