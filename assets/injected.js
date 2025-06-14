@@ -81,27 +81,6 @@ function createSearchInterface(doc, treeDiv) {
         box-sizing: border-box;
     `;
     
-    // 創建清除按鈕
-    const clearBtn = doc.createElement('button');
-    clearBtn.id = 'clearBtn';
-    clearBtn.textContent = '✕';
-    clearBtn.style.cssText = `
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        font-size: 18px;
-        cursor: pointer;
-        color: #999;
-        display: none;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        transition: all 0.2s ease;
-    `;
-    
     // 創建統計信息
     const searchStats = doc.createElement('div');
     searchStats.id = 'searchStats';
@@ -133,7 +112,6 @@ function createSearchInterface(doc, treeDiv) {
     
     // 組裝搜尋容器
     inputContainer.appendChild(searchInput);
-    inputContainer.appendChild(clearBtn);
     searchContainer.appendChild(inputContainer);
     searchContainer.appendChild(searchStats);
     searchContainer.appendChild(searchResults);
@@ -151,7 +129,7 @@ function createSearchInterface(doc, treeDiv) {
         console.log('🔍 搜尋框元素:', searchInput);
     }, 1000);
     
-    return { searchInput, clearBtn, searchStats, searchResults };
+    return { searchInput, searchStats, searchResults };
 }
 
 function createSearchUI(menuFrame) {
@@ -162,7 +140,7 @@ function createSearchUI(menuFrame) {
     let menuItems = [];
     
     // 創建搜尋介面
-    const { searchInput, clearBtn, searchStats, searchResults } = createSearchInterface(doc, treeDiv);
+    const { searchInput, searchStats, searchResults } = createSearchInterface(doc, treeDiv);
     
     // 發送所有 HTML 到後端處理，完成後綁定事件
     sendAllHTMLToBackend(doc, (items) => {
@@ -170,7 +148,7 @@ function createSearchUI(menuFrame) {
         console.log(`📋 後端處理完成，共 ${menuItems.length} 個選單項目`);
         
         // 現在綁定搜尋事件
-        setupSearchEvents(doc, menuItems, treeDiv, searchInput, clearBtn, searchStats, searchResults);
+        setupSearchEvents(doc, menuItems, treeDiv, searchInput, searchStats, searchResults);
         console.log('✅ 搜尋功能已啟用');
     });
 }
@@ -286,7 +264,7 @@ function sendAllHTMLToBackend(doc, callback) {
     }
 }
 
-function setupSearchEvents(doc, menuItems, originalTree, searchInput, clearBtn, searchStats, searchResults) {
+function setupSearchEvents(doc, menuItems, originalTree, searchInput, searchStats, searchResults) {
     let searchTimeout;
     
     console.log(`🔍 搜尋事件已綁定，可搜尋項目數量: ${menuItems.length}`);
@@ -295,8 +273,6 @@ function setupSearchEvents(doc, menuItems, originalTree, searchInput, clearBtn, 
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value;
         console.log(`🔎 搜尋查詢: "${query}" (長度: ${query.length})`);
-        
-        clearBtn.style.display = query.length > 0 ? 'block' : 'none';
         
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
@@ -319,13 +295,7 @@ function setupSearchEvents(doc, menuItems, originalTree, searchInput, clearBtn, 
         console.log(`🔄 change 事件: "${e.target.value}"`);
     });
     
-    // 清除按鈕事件
-    clearBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        clearBtn.style.display = 'none';
-        hideSearchResults(searchResults, searchStats, originalTree);
-        searchInput.focus();
-    });
+    
     
     // 鍵盤事件
     searchInput.addEventListener('keydown', (e) => {
@@ -337,7 +307,6 @@ function setupSearchEvents(doc, menuItems, originalTree, searchInput, clearBtn, 
         }
         if (e.key === 'Escape') {
             searchInput.value = '';
-            clearBtn.style.display = 'none';
             hideSearchResults(searchResults, searchStats, originalTree);
         }
     });
@@ -349,15 +318,6 @@ function setupSearchEvents(doc, menuItems, originalTree, searchInput, clearBtn, 
     
     searchInput.addEventListener('blur', () => {
         searchInput.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-    });
-    
-    // 清除按鈕懸浮效果
-    clearBtn.addEventListener('mouseover', () => {
-        clearBtn.style.background = '#f0f0f0';
-    });
-    
-    clearBtn.addEventListener('mouseout', () => {
-        clearBtn.style.background = 'none';
     });
 }
 
