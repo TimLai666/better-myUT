@@ -1,0 +1,6 @@
+services:
+  myut:
+    image: myut:latest
+    ports:
+      - 4540:8080
+    restart: unless-stopped
