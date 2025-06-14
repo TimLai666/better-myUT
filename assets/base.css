@@ -10,6 +10,22 @@ center {
     padding: 10px 0 !important;
 }
 
+.idxHeader {
+    background-image: none !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 20%, #cbd5e1 100%) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.idxHeader::before {
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(5, 150, 105, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.3) 0%, transparent 50%) !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+}
+
 .schoolLogo {
     height: 100px !important;
     z-index: 1000 !important;
@@ -21,6 +37,7 @@ center {
     max-height: 100% !important;
     width: auto !important;
     max-width: 100% !important;
+    margin-top: -10px !important;
     object-fit: contain !important;
     object-position: center !important;
 }
@@ -28,7 +45,7 @@ center {
 /* 顯示/隱藏選單按鈕 */
 #switch {
     height: 30px !important;
-    padding: 5px 2px !important;
+    padding: 5px 4px !important;
     position: fixed !important;
     display: block;
     color: #ffffff !important;
@@ -61,7 +78,7 @@ center {
 @media (max-width: 768px) {
     /* 縮小校徽 */
     .schoolLogo > img {
-        margin-top: 45px !important;
+        margin-top: 43px !important;
         margin-left: 310px !important;
         height: auto !important;
         width: calc(30dvw) !important;
