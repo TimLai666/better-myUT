@@ -34,11 +34,11 @@ go build -o better-myUT main.go
 PORT=8080
 
 # 上游校務系統網址，理論上保持預設即可
-TARGET_HOST=https://my.utaipei.edu.tw
+TARGET_URL=https://my.utaipei.edu.tw
 
 # 部署後對外的完整網址（⚠️ 極度重要）
 # 代理會利用此值把所有絕對網址/重定向改寫回自身
-PROXY_HOST=https://your.domain.com
+PROXY_URL=https://your.domain.com
 ```
 
 ### 3. 執行
